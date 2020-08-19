@@ -19,6 +19,7 @@ class TestAligmentComputationUseCase(unittest.TestCase):
     def test_alignment_computation(self):
         use_case = alignment.AlignmentComputationUseCase()
         alignments = use_case.compute(self.mock_extended_process_tree, self.log)
+        print(alignments)
         self.assertEqual(len(alignments), 1)
 
 

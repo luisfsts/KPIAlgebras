@@ -17,18 +17,18 @@ class TimeRangesConstructionUseCase(object):
         
     def construct_time_ranges(self, log, alignment, model, initial_marking, final_marking):
         time_interval_map = dict()
-        for trace in log:
-            instances = self.get_activities_time_instances(trace, alignment, model)
+        for index, trace in enumerate(log):
+            instances = self.get_activities_time_instances(trace, alignment[index], model)
             timed_marking = self.get_timed_marking(initial_marking, trace[0]["time:timestamp"])
-            self.construct_ranges(instances, alignment, model, timed_marking, time_interval_map)
+            self.construct_ranges(instances, alignment[index], model, timed_marking, time_interval_map)
         return time_interval_map
     
     def shift_time_ranges(self, node, kpi, delta):
         time_interval_map = dict()
-        for trace in self.log:
-            instances = self.get_activities_time_instances(trace, self.alignments, self.model)
+        for index, trace in enumerate(self.log):
+            instances = self.get_activities_time_instances(trace, self.alignments[index], self.model)
             timed_marking = self.get_timed_marking(self.initial_marking, trace[0]["time:timestamp"])
-            self.construct_ranges(instances, self.alignments, self.model, timed_marking, time_interval_map, node, kpi, delta)
+            self.construct_ranges(instances, self.alignments[index], self.model, timed_marking, time_interval_map, node, kpi, delta)
         return time_interval_map
 
     def get_activities_time_instances(self, trace, alignment, model):
@@ -49,7 +49,7 @@ class TimeRangesConstructionUseCase(object):
                 else:
                     instances[event["concept:name"]]= [DateTimeRange(event["time:timestamp"], event["time:timestamp"])]
         
-        border_moves = [move for move in alignment if move[0][0] == ">>"] 
+        border_moves = [move for move in alignment["alignment"] if move[0][0] == ">>"] 
 
         for index, border_move in enumerate(border_moves):
             move_name = self.get_move_name(border_move)
@@ -61,13 +61,8 @@ class TimeRangesConstructionUseCase(object):
                 instances[move_name] = [DateTimeRange(instance.end_datetime, instance.end_datetime) for instance in instances[last_move_label]]
         return instances
     
-    def get_next_visible_move(self, move, alignment, instances):
-        next_moves = [move for move in alignment[alignment.index(move):] if self.get_move_label(move) is not None and self.get_move_label(move) != ">>" ]
-        sorted_next_moves_list = sorted(next_moves, key=lambda x: instances[self.get_move_label(x)][-1].end_datetime)
-        return sorted_next_moves_list[0]
-
     def get_last_visible_move(self, move, alignment, instances):
-        last_moves = [move for move in alignment[:alignment.index(move)] if self.get_move_label(move) is not None and self.get_move_label(move) != ">>" ]
+        last_moves = [move for move in alignment["alignment"][:alignment["alignment"].index(move)] if self.get_move_label(move) is not None and self.get_move_label(move) != ">>" ]
         sorted_last_moves_list = sorted(last_moves, key=lambda x: instances[self.get_move_label(x)][-1].end_datetime)
         return sorted_last_moves_list[-1]
 
@@ -89,7 +84,7 @@ class TimeRangesConstructionUseCase(object):
         active_subtrees = []
         self.target_node = node
         
-        for move in alignment:
+        for move in alignment["alignment"]:
             if self.is_model_or_sync_move(move):
                 transition = self.get_transition_from_move(move, model.transitions)
                 name = transition.name if self.is_border(transition) else transition.label

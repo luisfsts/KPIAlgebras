@@ -21,7 +21,7 @@ class TestCycleTimeAnalysisUseCase(unittest.TestCase):
         transition_b = [transition.name for transition in self.model.transitions if transition.label == "b"][0]
         transition_c = [transition.name for transition in self.model.transitions if transition.label == "c"][0]
         transition_d = [transition.name for transition in self.model.transitions if transition.label == "d"][0]
-        self.alignments = {'alignment': [(('t_0_1596012778.96210121990', '>>'), (None, '>>')), 
+        self.alignments = [{'alignment': [(('t_0_1596012778.96210121990', '>>'), (None, '>>')), 
                                         (('>>', "->( 'a', +( 'b', 'c' ), 'd' )_start"), ('>>', None)), 
                                         (('t_a_0', transition_a), ('a', 'a')), 
                                         (('>>', "+( 'b', 'c' )_start"), ('>>', None)), 
@@ -34,8 +34,8 @@ class TestCycleTimeAnalysisUseCase(unittest.TestCase):
                            'cost': 6, 
                            'visited_states': 11, 
                            'queued_states': 30, 
-                           'traversed_arcs': 30}
-        self.time_ranges = {"->( 'a', +( 'b', 'c' ), 'd' )": {'cycle_times':[DateTimeRange('2019-05-20T01:00:00+0000','2019-05-21T14:23:00+0000')]}, 
+                           'traversed_arcs': 30}]
+        self.time_ranges = {"->( 'a', +( 'b', 'c' ), 'd' )": {'cycle_times':[DateTimeRange('2019-05-20T01:00:00+0000','2019-05-21T17:06:00+0000')]}, 
                             'a': {'cycle_times': [DateTimeRange('2019-05-20T01:00:00+0000','2019-05-20T12:30:00+0000')]},
                             "+( 'b', 'c' )": {'cycle_times':[DateTimeRange('2019-05-20T12:30:00+0000','2019-05-21T14:14:00+0000')]},
                             'c':{'cycle_times': [DateTimeRange('2019-05-20T12:30:00+0000','2019-05-20T15:55:00+0000')]},
@@ -44,5 +44,5 @@ class TestCycleTimeAnalysisUseCase(unittest.TestCase):
 
     def test_cycle_time_analysis_use_case(self):
         use_case = measurement.CycleTimeAnalysisUseCase()
-        ranges = use_case.analyse(self.log, self.alignments, self.process_tree)
+        ranges = use_case.analyse(self.log, self.alignments, self.process_tree, self.model)
         self.assertDictEqual(self.time_ranges, ranges)
