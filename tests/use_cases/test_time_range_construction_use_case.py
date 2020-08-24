@@ -15,8 +15,8 @@ class TestTimeRangeConstructionUseCase(unittest.TestCase):
         self.event_log = data.EventLog(xesimporter.import_log(path))
         self.log = self.event_log.log
         process_tree = process_tree_util.parse("->( 'a' , +( 'b', 'c' ), 'd' )")
-        extended_process_tree = model.ExtendedProcessTree(process_tree)
-        self.model, self.initial_marking, self.final_marking = converter.apply(extended_process_tree)
+        self.extended_process_tree = model.ExtendedProcessTree(process_tree)
+        self.model, self.initial_marking, self.final_marking = converter.apply(self.extended_process_tree)
         transition_a = [transition.name for transition in self.model.transitions if transition.label == "a"][0]
         transition_b = [transition.name for transition in self.model.transitions if transition.label == "b"][0]
         transition_c = [transition.name for transition in self.model.transitions if transition.label == "c"][0]
@@ -126,7 +126,7 @@ class TestTimeRangeConstructionUseCase(unittest.TestCase):
                                   'service_times': [DateTimeRange('2019-05-21T14:23:00+0000','2019-05-21T17:06:00+0000')]}}
         
     def test_time_range_construction(self):
-        use_case = measurement.TimeRangesConstructionUseCase(self.log, self.model, self.initial_marking, self.final_marking, self.alignments) 
+        use_case = measurement.TimeRangesConstructionUseCase(self.log, self.extended_process_tree, self.model, self.initial_marking, self.final_marking, self.alignments) 
         time_ranges = use_case.construct_time_ranges(self.log,
                                                     self.alignments, 
                                                     self.model, 
@@ -135,7 +135,7 @@ class TestTimeRangeConstructionUseCase(unittest.TestCase):
         self.assertDictEqual(self.time_ranges, time_ranges)
         
     def test_waiting_time_shifting_on_parallel_construction_with_no_gains(self):
-        use_case = measurement.TimeRangesConstructionUseCase(self.log, self.model, self.initial_marking, self.final_marking, self.alignments) 
+        use_case = measurement.TimeRangesConstructionUseCase(self.log, self.extended_process_tree, self.model, self.initial_marking, self.final_marking, self.alignments) 
         delta = 0.2
         kpi = 'waiting_time'
         node = 'c' 
@@ -143,7 +143,7 @@ class TestTimeRangeConstructionUseCase(unittest.TestCase):
         self.assertDictEqual(self.waiting_shifted_time_ranges_with_no_gains, shifted_time_ranges)
     
     def test_waiting_time_shifting_on_parallel_construction_with_gains(self):
-        use_case = measurement.TimeRangesConstructionUseCase(self.log, self.model, self.initial_marking, self.final_marking, self.alignments) 
+        use_case = measurement.TimeRangesConstructionUseCase(self.log, self.extended_process_tree, self.model, self.initial_marking, self.final_marking, self.alignments) 
         delta = 0.2
         kpi = 'waiting_time'
         node = 'b' 
@@ -151,7 +151,7 @@ class TestTimeRangeConstructionUseCase(unittest.TestCase):
         self.assertDictEqual(self.waiting_shifted_time_ranges_with_gains, shifted_time_ranges)
 
     def test_service_time_shifting_on_parallel_construction_with_gains(self):
-        use_case = measurement.TimeRangesConstructionUseCase(self.log, self.model, self.initial_marking, self.final_marking, self.alignments) 
+        use_case = measurement.TimeRangesConstructionUseCase(self.log, self.extended_process_tree, self.model, self.initial_marking, self.final_marking, self.alignments) 
         delta = 0.2
         kpi = 'service_time'
         node = 'b' 
@@ -159,7 +159,7 @@ class TestTimeRangeConstructionUseCase(unittest.TestCase):
         self.assertDictEqual(self.service_shifted_time_ranges_with_gains, shifted_time_ranges)
     
     def test_service_time_shifting_on_parallel_construction_with_no_gains(self):
-        use_case = measurement.TimeRangesConstructionUseCase(self.log, self.model, self.initial_marking, self.final_marking, self.alignments) 
+        use_case = measurement.TimeRangesConstructionUseCase(self.log, self.extended_process_tree, self.model, self.initial_marking, self.final_marking, self.alignments) 
         delta = 0.2
         kpi = 'service_time'
         node = 'c' 

@@ -6,7 +6,7 @@ import re
 
 
 class TimeRangesConstructionUseCase(object):
-    def __init__(self, log, model, initial_marking, final_marking, alignments):
+    def __init__(self, log, extended_process_tree, model, initial_marking, final_marking, alignments):
         self.log = log
         self.model = model
         self.initial_marking = initial_marking
@@ -14,6 +14,7 @@ class TimeRangesConstructionUseCase(object):
         self.alignments = alignments
         self.shiftting_amount = timedelta()
         self.target_node = None
+        self.extended_process_tree = extended_process_tree
         
     def construct_time_ranges(self, log, alignment, model, initial_marking, final_marking):
         time_interval_map = dict()
@@ -21,6 +22,7 @@ class TimeRangesConstructionUseCase(object):
             instances = self.get_activities_time_instances(trace, alignment[index], model)
             timed_marking = self.get_timed_marking(initial_marking, trace[0]["time:timestamp"])
             self.construct_ranges(instances, alignment[index], model, timed_marking, time_interval_map)
+            self.update_extended_tree(time_interval_map)
         return time_interval_map
     
     def shift_time_ranges(self, node, kpi, delta):
@@ -29,7 +31,13 @@ class TimeRangesConstructionUseCase(object):
             instances = self.get_activities_time_instances(trace, self.alignments[index], self.model)
             timed_marking = self.get_timed_marking(self.initial_marking, trace[0]["time:timestamp"])
             self.construct_ranges(instances, self.alignments[index], self.model, timed_marking, time_interval_map, node, kpi, delta)
+            self.update_extended_tree(time_interval_map)
         return time_interval_map
+
+    def update_extended_tree(self, time_interval_map):
+        nodes = self.extended_process_tree.get_nodes_bottom_up()
+        for node in nodes:
+            node.kpis = time_interval_map[node.__str__()]
 
     def get_activities_time_instances(self, trace, alignment, model):
         open_instances = []

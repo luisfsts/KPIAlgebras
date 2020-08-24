@@ -56,7 +56,7 @@ class CycleTimeAnalysisUseCase(object):
         self.construct_cycle_time_ranges_for_Operators(process_tree, cycle_time_ranges)
         
     def construct_cycle_time_ranges_for_Operators(self, process_tree, cycle_time_ranges):
-        operators_list = [node for node in self.get_node_list_bottom_up(process_tree) if node.children]
+        operators_list = [node for node in process_tree.get_nodes_bottom_up() if node.children]
         ranges = []
         for operator in operators_list:
             for child in operator.children:
@@ -66,9 +66,7 @@ class CycleTimeAnalysisUseCase(object):
             start = min(ranges, key = lambda range: range.start_datetime).start_datetime
             end = max(ranges, key = lambda range: range.end_datetime).end_datetime
             cycle_time_ranges[operator.__str__()]={'cycle_times': [DateTimeRange(start, end)]}
-
            
-        
     def construct_cycle_time_ranges_for_leafs(self, activity_instances, alignment, process_tree, model, cycle_time_ranges):
         for index, move in enumerate(alignment["alignment"]):
             if self.is_model_or_sync_move(move):
@@ -124,16 +122,4 @@ class CycleTimeAnalysisUseCase(object):
             timed_marking[key] = {'time':time_stamp, 'delta': None}
         return timed_marking
     
-    def get_node_list_bottom_up(self, tree):
-        stack = [iter([tree])]
-        nodes = []
-        while stack:
-            for node in stack[-1]:
-                if node not in nodes:
-                    nodes.append(node)
-                    if node.children:
-                        stack.append(iter(node.children[::-1]))
-                break
-            else:
-                stack.pop()
-        yield from nodes[::-1]
+   

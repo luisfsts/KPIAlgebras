@@ -6,13 +6,33 @@ from copy import copy
 class ExtendedProcessTree(ProcessTree):
     def __init__(self, process_tree):
         super().__init__(process_tree.operator, process_tree.parent, process_tree.children, process_tree.label)
+        self._children = [ExtendedProcessTree(n)for n in self._children] if self._children else list()
+        self.__kpis = {}
     
     def get_leaves(self):
         return [children for children in self.children if not children.children and children.label is not None]
-    
-    def get_nodes(self):
-        return [children for children in self.children if children.children]
 
+    @property
+    def kpis(self):
+        return self.__kpis
+    
+    @kpis.setter
+    def kpis(self, value):
+        self.__kpis = value    
+    
+    def get_nodes_bottom_up(self):
+        stack = [iter([self])]
+        nodes = []
+        while stack:
+            for node in stack[-1]:
+                if node not in nodes:
+                    nodes.append(node)
+                    if node.children:
+                        stack.append(iter(node.children[::-1]))
+                break
+            else:
+                stack.pop()
+        yield from nodes[::-1]
 
 class PetriNet(PetriNet):
     def __init__(self, petri_net):

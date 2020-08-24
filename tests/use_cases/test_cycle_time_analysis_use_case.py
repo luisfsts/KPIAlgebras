@@ -15,8 +15,8 @@ class TestCycleTimeAnalysisUseCase(unittest.TestCase):
         self.event_log = data.EventLog(xesimporter.import_log(path))
         self.log = self.event_log.log
         self.process_tree = process_tree_util.parse("->( 'a' , +( 'b', 'c' ), 'd' )")
-        extended_process_tree = model.ExtendedProcessTree(self.process_tree)
-        self.model, self.initial_marking, self.final_marking = converter.apply(extended_process_tree)
+        self.extended_process_tree = model.ExtendedProcessTree(self.process_tree)
+        self.model, self.initial_marking, self.final_marking = converter.apply(self.extended_process_tree)
         transition_a = [transition.name for transition in self.model.transitions if transition.label == "a"][0]
         transition_b = [transition.name for transition in self.model.transitions if transition.label == "b"][0]
         transition_c = [transition.name for transition in self.model.transitions if transition.label == "c"][0]
@@ -44,5 +44,5 @@ class TestCycleTimeAnalysisUseCase(unittest.TestCase):
 
     def test_cycle_time_analysis_use_case(self):
         use_case = measurement.CycleTimeAnalysisUseCase()
-        ranges = use_case.analyse(self.log, self.alignments, self.process_tree, self.model)
+        ranges = use_case.analyse(self.log, self.alignments, self.extended_process_tree, self.model)
         self.assertDictEqual(self.time_ranges, ranges)
