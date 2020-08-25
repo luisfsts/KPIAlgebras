@@ -28,12 +28,30 @@ class TimeRangeConstructionRequestObject(ValidRequestObject):
     @classmethod
     def from_dict(cls, dict):
         invalid_request = InvalidRequestObject()
-        if 'input' in dict:
-            if not dict['input'].endswith(".xes") or not dict['input'].endswith(".csv"):
+        if 'event_log' in dict:
+            if not dict['event_log'].endswith(".xes") or not dict['event_log'].endswith(".csv"):
                 invalid_request.add_error("Event log","extension is not supported")
                 return invalid_request
         else:
             invalid_request.add_error("Event log","is missing") 
             return invalid_request
 
-        return cls(parameters=dict.get("input", None))
+        return cls(parameters=dict.get("event_log", None))
+
+class TimeShiftingRequestObject(ValidRequestObject):
+    def __init__(self, parameters):
+        self.parameters = parameters
+    
+    @classmethod
+    def from_dict(cls, dict):
+        invalid_request = InvalidRequestObject()
+        if 'target_node' not in dict:
+            invalid_request.add_error("Target Node", "is missing")
+        if 'delta' not in dict:
+            invalid_request.add_error("Delta", "is missing")
+        
+        if invalid_request.has_errors():
+            return invalid_request
+        
+        return cls(parameters=dict)
+            
