@@ -29,7 +29,7 @@ class TimeRangeConstructionRequestObject(ValidRequestObject):
     def from_dict(cls, dict):
         invalid_request = InvalidRequestObject()
         if 'event_log' in dict:
-            if not dict['event_log'].endswith(".xes") or not dict['event_log'].endswith(".csv"):
+            if not dict['event_log'].endswith(".xes") and not dict['event_log'].endswith(".csv"):
                 invalid_request.add_error("Event log","extension is not supported")
                 return invalid_request
         else:

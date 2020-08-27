@@ -9,8 +9,7 @@ from pm4py.algo.filtering.log.attributes import attributes_filter
 
 
 class AlignmentComputationUseCase(object):
-    def compute(self, process_tree, event_log):
-        model, initial_marking, final_marking = converter.apply(process_tree)
+    def compute(self, model, initial_marking, final_marking, event_log):
         alignments = []
 
         for trace in event_log.log:

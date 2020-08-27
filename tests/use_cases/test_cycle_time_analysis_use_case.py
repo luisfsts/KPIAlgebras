@@ -44,5 +44,6 @@ class TestCycleTimeAnalysisUseCase(unittest.TestCase):
 
     def test_cycle_time_analysis_use_case(self):
         use_case = measurement.CycleTimeAnalysisUseCase()
-        ranges = use_case.analyse(self.log, self.alignments, self.extended_process_tree, self.model)
-        self.assertDictEqual(self.time_ranges, ranges)
+        response = use_case.analyse(self.log, self.alignments, self.extended_process_tree, self.model)
+        for node in response.value.get_nodes_bottom_up():
+            self.assertDictEqual(self.time_ranges[node.__str__()], node.kpis)

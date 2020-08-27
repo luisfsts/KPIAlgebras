@@ -2,9 +2,8 @@ import unittest
 from unittest import mock
 import os
 from util import constants
-# from pm4py.objects.log.importer.xes import factory as xes_importer
 from KPIAlgebras.use_cases import import_event_log_use_case as importer
-
+from KPIAlgebras.request_objects import request_objects
 
 class TestImportEventLogUseCase(unittest.TestCase):
     def setUp(self):
@@ -12,6 +11,7 @@ class TestImportEventLogUseCase(unittest.TestCase):
 
     def test_import_event_log_from_xes(self):
         use_case = importer.ImportEventLogUseCase()
-        event_log = use_case.import_event_log_from_xes(self.file_name)
+        request_object = request_objects.TimeRangeConstructionRequestObject.from_dict({'event_log': self.file_name})
+        event_log = use_case.import_event_log_from_xes(request_object)
         
         self.assertEqual(len(event_log), 1)

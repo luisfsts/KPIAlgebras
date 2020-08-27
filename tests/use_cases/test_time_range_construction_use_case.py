@@ -127,36 +127,40 @@ class TestTimeRangeConstructionUseCase(unittest.TestCase):
         
     def test_time_range_construction(self):
         use_case = measurement.TimeRangesConstructionUseCase(self.log, self.extended_process_tree, self.model, self.initial_marking, self.final_marking, self.alignments) 
-        time_ranges = use_case.construct_time_ranges(self.log,
+        response = use_case.construct_time_ranges(self.log,
                                                     self.alignments, 
                                                     self.model, 
                                                     self.initial_marking, 
                                                     self.final_marking)
-        self.assertDictEqual(self.time_ranges, time_ranges)
+        for node in response.value.get_nodes_bottom_up():
+            self.assertDictEqual(self.time_ranges[node.__str__()], node.kpis)
         
     def test_waiting_time_shifting_on_parallel_construction_with_no_gains(self):
         use_case = measurement.TimeRangesConstructionUseCase(self.log, self.extended_process_tree, self.model, self.initial_marking, self.final_marking, self.alignments) 
         delta = 0.2
         kpi = 'waiting_time'
         node = 'c' 
-        shifted_time_ranges =  use_case.shift_time_ranges(node, kpi, delta)
-        self.assertDictEqual(self.waiting_shifted_time_ranges_with_no_gains, shifted_time_ranges)
+        response =  use_case.shift_time_ranges(node, kpi, delta)
+        for node in response.value.get_nodes_bottom_up():
+            self.assertDictEqual(self.waiting_shifted_time_ranges_with_no_gains[node.__str__()], node.kpis)
     
     def test_waiting_time_shifting_on_parallel_construction_with_gains(self):
         use_case = measurement.TimeRangesConstructionUseCase(self.log, self.extended_process_tree, self.model, self.initial_marking, self.final_marking, self.alignments) 
         delta = 0.2
         kpi = 'waiting_time'
         node = 'b' 
-        shifted_time_ranges = use_case.shift_time_ranges(node, kpi, delta)
-        self.assertDictEqual(self.waiting_shifted_time_ranges_with_gains, shifted_time_ranges)
-
+        response = use_case.shift_time_ranges(node, kpi, delta)
+        for node in response.value.get_nodes_bottom_up():
+            self.assertDictEqual(self.waiting_shifted_time_ranges_with_gains[node.__str__()], node.kpis)
+    
     def test_service_time_shifting_on_parallel_construction_with_gains(self):
         use_case = measurement.TimeRangesConstructionUseCase(self.log, self.extended_process_tree, self.model, self.initial_marking, self.final_marking, self.alignments) 
         delta = 0.2
         kpi = 'service_time'
         node = 'b' 
-        shifted_time_ranges = use_case.shift_time_ranges(node, kpi, delta)
-        self.assertDictEqual(self.service_shifted_time_ranges_with_gains, shifted_time_ranges)
+        response = use_case.shift_time_ranges(node, kpi, delta)
+        for node in response.value.get_nodes_bottom_up():
+            self.assertDictEqual(self.service_shifted_time_ranges_with_gains[node.__str__()], node.kpis) 
     
     def test_service_time_shifting_on_parallel_construction_with_no_gains(self):
         use_case = measurement.TimeRangesConstructionUseCase(self.log, self.extended_process_tree, self.model, self.initial_marking, self.final_marking, self.alignments) 
@@ -171,5 +175,6 @@ class TestTimeRangeConstructionUseCase(unittest.TestCase):
         # new_date = end - shiftting_amount
         # date.set_end_datetime(new_date)
         # print(new_date)
-        shifted_time_ranges = use_case.shift_time_ranges(node, kpi, delta)
-        self.assertDictEqual(self.service_shifted_time_ranges_with_no_gains, shifted_time_ranges)
+        response = use_case.shift_time_ranges(node, kpi, delta)
+        for node in response.value.get_nodes_bottom_up():
+            self.assertDictEqual(self.service_shifted_time_ranges_with_no_gains[node.__str__()], node.kpis) 

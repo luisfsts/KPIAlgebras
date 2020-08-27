@@ -1,4 +1,5 @@
 from datetimerange import DateTimeRange
+from KPIAlgebras.response_objects import response_objects as response
 
 class CycleTimeAnalysisUseCase(object):
     def analyse(self, log, alignments, process_tree, model):
@@ -7,8 +8,13 @@ class CycleTimeAnalysisUseCase(object):
         for alignment_index, alignment in enumerate(alignments):
             instances = self.get_activities_time_instances(log[alignment_index], alignment, model)
             self.construct_cycle_time_ranges(instances, alignment, process_tree, model, cycle_time_ranges)
+            self.update_extended_tree(cycle_time_ranges, process_tree)
+        return response.ResponseSuccess(process_tree)
 
-        return cycle_time_ranges
+    def update_extended_tree(self, time_interval_map, process_tree):
+        nodes = process_tree.get_nodes_bottom_up()
+        for node in nodes:
+            node.kpis = time_interval_map[node.__str__()]
 
     def get_activities_time_instances(self, trace, alignment, model):
         open_instances = []
@@ -82,7 +88,7 @@ class CycleTimeAnalysisUseCase(object):
         end = activity_instances[transition.label][0].end_datetime
         
         if transition.label in cycle_time_ranges:
-            if 'cycle_times' in  cycle_time_ranges[activity_label]:
+            if 'cycle_times' in  cycle_time_ranges[transition.label]:
                 cycle_time_ranges[transition.label]['cycle_times'].append(DateTimeRange(start, end))
             else:
                 time_interval_map[transition.label]['cycle_times'] = [DateTimeRange(start, end)]
