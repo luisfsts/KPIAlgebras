@@ -5,7 +5,6 @@ from KPIAlgebras.entities.data import EventLog as log
 from KPIAlgebras.entities.model import PetriNet, PetriNetSemantics
 from KPIAlgebras.response_objects import response_objects as response
 
-
 class TimeRangesConstructionUseCase(object):
     def __init__(self, log, extended_process_tree, model, initial_marking, final_marking, alignments):
         self.log = log
@@ -26,8 +25,12 @@ class TimeRangesConstructionUseCase(object):
             self.update_extended_tree(time_interval_map)
         return response.ResponseSuccess(self.extended_process_tree)
     
-    def shift_time_ranges(self, node, kpi, delta):
+    def shift_time_ranges(self, request_object):
+        node = request_object.parameters['target_node']
+        kpi =  request_object.parameters['kpi']
+        delta = float(request_object.parameters['delta'])
         time_interval_map = dict()
+
         for index, trace in enumerate(self.log):
             instances = self.get_activities_time_instances(trace, self.alignments[index], self.model)
             timed_marking = self.get_timed_marking(self.initial_marking, trace[0]["time:timestamp"])

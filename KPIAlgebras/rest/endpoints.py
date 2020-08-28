@@ -14,8 +14,13 @@ from pm4py.objects.process_tree import util as process_tree_util
 from KPIAlgebras.entities import model as model_object
 from KPIAlgebras.entities import data
 
-blueprint = Blueprint('measurement', __name__)
-
+blueprint = Blueprint('endpoints', __name__)
+alignments = None
+log = None
+model = None
+initial_marking = None
+final_marking = None
+extended_process_tree = None
 
 @blueprint.route('/measurement', methods=['POST'])
 def measurement():
@@ -25,16 +30,20 @@ def measurement():
     
     import_log_use_case = import_log.ImportEventLogUseCase()
     request_object = request_objects.TimeRangeConstructionRequestObject.from_dict({'event_log': file.filename})
+    global log
     log = data.EventLog(import_log_use_case.import_event_log_from_xes(request_object))
     os.remove(os.path.join(constants.upload_folder, file.filename))
 
     # discovery_use_case = discovery.ModelDiscoveryUseCase()
     # extended_process_tree = discovery_use_case.discover(log)
     process_tree = process_tree_util.parse("->( 'a' , +( 'b', 'c' ), 'd' )")
+    global extended_process_tree
     extended_process_tree = model_object.ExtendedProcessTree(process_tree)
+    global model, initial_marking, final_marking
     model, initial_marking, final_marking = converter.apply(extended_process_tree)
 
     alignment_use_case = alignment.AlignmentComputationUseCase()
+    global alignments
     alignments = alignment_use_case.compute(model, initial_marking, final_marking, log)
 
     high_level_use_case = measurement_high_level.CycleTimeAnalysisUseCase()
@@ -46,4 +55,19 @@ def measurement():
     current_app.process_tree = response.value
 
     return Response(json.dumps(response.value, cls=serializer.ExtendedProcessTreeJsonEncoder), mimetype='application/json',
+                    status=http_response_status_code.STATUS_CODES[response.type])
+
+@blueprint.route('/timeshifting', methods=['POST'])
+def timeshifting():
+    parameters = dict()
+
+    for arg, value in request.args.items():
+       parameters[arg] = value
+
+    request_object = request_objects.TimeShiftingRequestObject.from_dict(parameters)
+
+    global log, model, initial_marking, final_marking, extended_process_tree, alignments
+    fine_grained_use_case = measurement_fine_grained.TimeRangesConstructionUseCase(log.log, extended_process_tree, model, initial_marking, final_marking, alignments) 
+    response =  fine_grained_use_case.shift_time_ranges(request_object)
+    return  Response(json.dumps(response.value, cls=serializer.ExtendedProcessTreeJsonEncoder), mimetype='application/json',
                     status=http_response_status_code.STATUS_CODES[response.type])

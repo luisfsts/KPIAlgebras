@@ -7,6 +7,7 @@ from pm4py.objects.log.importer.xes import factory as xesimporter
 from pm4py.objects.process_tree import util as process_tree_util
 from datetimerange import DateTimeRange
 from datetime import datetime, timedelta
+from KPIAlgebras.request_objects import request_objects
 
 class TestTimeRangeConstructionUseCase(unittest.TestCase):
     def setUp(self):
@@ -137,44 +138,32 @@ class TestTimeRangeConstructionUseCase(unittest.TestCase):
         
     def test_waiting_time_shifting_on_parallel_construction_with_no_gains(self):
         use_case = measurement.TimeRangesConstructionUseCase(self.log, self.extended_process_tree, self.model, self.initial_marking, self.final_marking, self.alignments) 
-        delta = 0.2
-        kpi = 'waiting_time'
-        node = 'c' 
-        response =  use_case.shift_time_ranges(node, kpi, delta)
+        parameters={'delta':0.2, 'kpi':'waiting_time','target_node':'c'} 
+        request_object = request_objects.TimeShiftingRequestObject.from_dict(parameters)
+        response = use_case.shift_time_ranges(request_object)
         for node in response.value.get_nodes_bottom_up():
             self.assertDictEqual(self.waiting_shifted_time_ranges_with_no_gains[node.__str__()], node.kpis)
     
     def test_waiting_time_shifting_on_parallel_construction_with_gains(self):
         use_case = measurement.TimeRangesConstructionUseCase(self.log, self.extended_process_tree, self.model, self.initial_marking, self.final_marking, self.alignments) 
-        delta = 0.2
-        kpi = 'waiting_time'
-        node = 'b' 
-        response = use_case.shift_time_ranges(node, kpi, delta)
+        parameters={'delta':0.2, 'kpi':'waiting_time','target_node':'b'} 
+        request_object = request_objects.TimeShiftingRequestObject.from_dict(parameters)
+        response = use_case.shift_time_ranges(request_object)
         for node in response.value.get_nodes_bottom_up():
             self.assertDictEqual(self.waiting_shifted_time_ranges_with_gains[node.__str__()], node.kpis)
     
     def test_service_time_shifting_on_parallel_construction_with_gains(self):
         use_case = measurement.TimeRangesConstructionUseCase(self.log, self.extended_process_tree, self.model, self.initial_marking, self.final_marking, self.alignments) 
-        delta = 0.2
-        kpi = 'service_time'
-        node = 'b' 
-        response = use_case.shift_time_ranges(node, kpi, delta)
+        parameters={'delta':0.2, 'kpi':'service_time','target_node':'b'} 
+        request_object = request_objects.TimeShiftingRequestObject.from_dict(parameters)
+        response = use_case.shift_time_ranges(request_object)
         for node in response.value.get_nodes_bottom_up():
             self.assertDictEqual(self.service_shifted_time_ranges_with_gains[node.__str__()], node.kpis) 
     
     def test_service_time_shifting_on_parallel_construction_with_no_gains(self):
         use_case = measurement.TimeRangesConstructionUseCase(self.log, self.extended_process_tree, self.model, self.initial_marking, self.final_marking, self.alignments) 
-        delta = 0.2
-        kpi = 'service_time'
-        node = 'c' 
-        # date = DateTimeRange('2019-05-20T12:51:00+0000','2019-05-20T15:55:00+0000')
-        # start = date.start_datetime
-        # end = date.end_datetime
-        # duration = end - start
-        # shiftting_amount = timedelta(seconds = duration.total_seconds() * delta)
-        # new_date = end - shiftting_amount
-        # date.set_end_datetime(new_date)
-        # print(new_date)
-        response = use_case.shift_time_ranges(node, kpi, delta)
+        parameters={'delta':0.2, 'kpi':'service_time','target_node':'c'} 
+        request_object = request_objects.TimeShiftingRequestObject.from_dict(parameters)
+        response = use_case.shift_time_ranges(request_object)
         for node in response.value.get_nodes_bottom_up():
             self.assertDictEqual(self.service_shifted_time_ranges_with_no_gains[node.__str__()], node.kpis) 
