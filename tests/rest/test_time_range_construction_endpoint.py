@@ -74,6 +74,6 @@ class TestTimeRangeConstructionEndpoint(unittest.TestCase):
         self.assertEquals(http_response.mimetype, 'application/json')
     
     def test_time_shifting_endpoint(self):
-        http_response = self.app.post('/timeshifting?delta=0.2&kpi=service_time&target_node=b')
+        http_response = self.app.post('/timeshifting?delta=0.2&kpi=service_time&target_node=%7B%22name%22%3A%20%22b%22%7D')
         self.assertEquals(http_response.status_code, 200)
         self.assertEquals(http_response.mimetype, 'application/json')

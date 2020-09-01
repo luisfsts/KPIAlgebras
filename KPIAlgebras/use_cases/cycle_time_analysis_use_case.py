@@ -9,12 +9,17 @@ class CycleTimeAnalysisUseCase(object):
             instances = self.get_activities_time_instances(log[alignment_index], alignment, model)
             self.construct_cycle_time_ranges(instances, alignment, process_tree, model, cycle_time_ranges)
             self.update_extended_tree(cycle_time_ranges, process_tree)
+            cycle_time_ranges.clear()
         return response.ResponseSuccess(process_tree)
 
-    def update_extended_tree(self, time_interval_map, process_tree):
-        nodes = process_tree.get_nodes_bottom_up()
+    def update_extended_tree(self, time_interval_map, extended_process_tree):
+        nodes = extended_process_tree.get_nodes_bottom_up()
         for node in nodes:
-            node.kpis = time_interval_map[node.__str__()]
+            for kpi in time_interval_map[node.__str__()]:
+                if kpi in node.kpis:
+                    node.kpis[kpi].extend(time_interval_map[node.__str__()][kpi])
+                else:
+                    node.kpis[kpi] = time_interval_map[node.__str__()][kpi]
 
     def get_activities_time_instances(self, trace, alignment, model):
         open_instances = []
@@ -66,9 +71,7 @@ class CycleTimeAnalysisUseCase(object):
         ranges = []
         for operator in operators_list:
             for child in operator.children:
-                name = child.label if not child.children else child.__str__()
-                child_ranges = [range for range in cycle_time_ranges[name]["cycle_times"]]
-                ranges.extend(child_ranges)
+                ranges.extend(cycle_time_ranges[child.__str__()]["cycle_times"])
             start = min(ranges, key = lambda range: range.start_datetime).start_datetime
             end = max(ranges, key = lambda range: range.end_datetime).end_datetime
             cycle_time_ranges[operator.__str__()]={'cycle_times': [DateTimeRange(start, end)]}

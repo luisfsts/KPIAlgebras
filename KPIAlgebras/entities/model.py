@@ -8,6 +8,7 @@ class ExtendedProcessTree(ProcessTree):
         super().__init__(process_tree.operator, process_tree.parent, process_tree.children, process_tree.label)
         self._children = [ExtendedProcessTree(n)for n in self._children] if self._children else list()
         self.__kpis = {}
+        self.__states = []
     
     def get_leaves(self):
         return [children for children in self.children if not children.children and children.label is not None]
@@ -18,7 +19,15 @@ class ExtendedProcessTree(ProcessTree):
     
     @kpis.setter
     def kpis(self, value):
-        self.__kpis = value    
+        self.__kpis = value
+    
+    @property
+    def states(self):
+        return self.__states
+    
+    @states.setter
+    def states(self, value):
+        self.__states = value 
     
     def get_nodes_bottom_up(self):
         stack = [iter([self])]
