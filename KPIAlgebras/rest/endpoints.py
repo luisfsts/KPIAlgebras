@@ -26,6 +26,7 @@ model = None
 initial_marking = None
 final_marking = None
 extended_process_tree = None
+parameters = []
 
 @blueprint.route('/measurement', methods=['POST'])
 def measurement():
@@ -99,26 +100,30 @@ def timeshifting():
     return  Response(extended_process_tree_json, mimetype='application/json',
                     status=http_response_status_code.STATUS_CODES[response.type])
 
-@blueprint.route('/undoChange', methods=['POST'])
+@blueprint.route('/undoChange', methods=['GET'])
 def undo_change():
-    global extended_process_tree
+    global extended_process_tree, parameters
     extended_process_tree = extended_process_tree.states.pop() 
     gviz = pt_vis_factory.apply(extended_process_tree, parameters={"format": "svg"})
     svg = get_base64_from_gviz(gviz)
     extended_process_tree_json = json.dumps(extended_process_tree, cls=serializer.ExtendedProcessTreeJsonEncoder)
     json_dict = json.loads(extended_process_tree_json)
     json_dict["svg"] = svg.decode('utf-8')
+    extended_process_tree_json = json.dumps(json_dict, cls=serializer.ExtendedProcessTreeJsonEncoder) 
+    # parameters = parameters[:-1] 
     return Response(extended_process_tree_json, mimetype='application/json',
                     status=http_response_status_code.STATUS_CODES[response_objects.ResponseSuccess.SUCCESS])
 
-@blueprint.route('/undoAllChanges', methods=['POST'])
+@blueprint.route('/undoAllChanges', methods=['GET'])
 def undo_all_changes():
-    global extended_process_tree
+    global extended_process_tree, parameters
     extended_process_tree = extended_process_tree.states[0]
     gviz = pt_vis_factory.apply(extended_process_tree, parameters={"format": "svg"})
     svg = get_base64_from_gviz(gviz)
     extended_process_tree_json = json.dumps(extended_process_tree, cls=serializer.ExtendedProcessTreeJsonEncoder)
     json_dict = json.loads(extended_process_tree_json)
     json_dict["svg"] = svg.decode('utf-8')
+    extended_process_tree_json = json.dumps(json_dict, cls=serializer.ExtendedProcessTreeJsonEncoder) 
+    # parameters = parameters[:-1]
     return Response(extended_process_tree_json, mimetype='application/json',
                     status=http_response_status_code.STATUS_CODES[response_objects.ResponseSuccess.SUCCESS])

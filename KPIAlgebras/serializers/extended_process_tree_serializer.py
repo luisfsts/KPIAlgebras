@@ -1,5 +1,6 @@
 import json
 import datetime
+import copy
 
 class ExtendedProcessTreeJsonEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -25,7 +26,7 @@ class ExtendedProcessTreeJsonEncoder(json.JSONEncoder):
                                                                      in node.kpis["idle_times"]], datetime.timedelta())/len(node.kpis["cycle_times"])) 
                                                                      if "idle_times" in node.kpis and node.kpis["idle_times"] else "0:00:00"},
                                                 'children':[children.__str__() for children in node.children]})
-
+                to_serialize['originalState'] = self.default(obj.states[0]) if obj.states else copy.deepcopy(to_serialize)
                 return to_serialize
             except AttributeError:
                 return super().default(obj)

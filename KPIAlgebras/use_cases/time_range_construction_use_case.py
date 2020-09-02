@@ -12,6 +12,7 @@ class TimeRangesConstructionUseCase(object):
         self.initial_marking = initial_marking
         self.final_marking = final_marking
         self.alignments = alignments
+        self.target_nodes = dict()
         self.shiftting_amount = timedelta()
         self.target_node = None
         self.extended_process_tree = extended_process_tree
@@ -27,18 +28,17 @@ class TimeRangesConstructionUseCase(object):
         return response.ResponseSuccess(self.extended_process_tree)
     
     def shift_time_ranges(self, request_object):
-        node = request_object.parameters['target_node']['name']
+        node = request_object.parameters['target_node']
         kpi =  request_object.parameters['kpi']
         delta = float(request_object.parameters['delta'])
         time_interval_map = dict()
         self.clear_tree_kpis()
         
-
         for index, trace in enumerate(self.log):
             instances = self.get_activities_time_instances(trace, self.alignments[index], self.model)
             timed_marking = self.get_timed_marking(self.initial_marking, trace[0]["time:timestamp"])
             self.construct_ranges(instances, self.alignments[index], self.model, timed_marking, time_interval_map, node, kpi, delta)
-            self.update_extended_tree(time_interval_map)
+            self.update_extended_tree(time_interval_map, node, kpi, delta)
             self.update_cycle_times(self.extended_process_tree, time_interval_map)
             time_interval_map.clear()
         
@@ -49,7 +49,7 @@ class TimeRangesConstructionUseCase(object):
         for node in nodes:
             node.kpis.clear()
 
-    def update_extended_tree(self, time_interval_map):
+    def update_extended_tree(self, time_interval_map, target_node=None, param_kpi=None, delta=None):
         nodes = self.extended_process_tree.get_nodes_bottom_up()
         for node in nodes:
             for kpi in time_interval_map[node.__str__()]:
@@ -57,6 +57,9 @@ class TimeRangesConstructionUseCase(object):
                     node.kpis[kpi].extend(time_interval_map[node.__str__()][kpi])
                 else:
                     node.kpis[kpi] = time_interval_map[node.__str__()][kpi]
+        if target_node is not None and param_kpi is not None and delta is not None:
+            change = {'node':target_node, 'kpi':param_kpi, 'delta':delta}
+            self.extended_process_tree.change = change
 
     def update_cycle_times(self, extended_process_tree, time_interval_map):
         nodes = extended_process_tree.get_nodes_bottom_up()
@@ -91,7 +94,10 @@ class TimeRangesConstructionUseCase(object):
                 time_range = DateTimeRange()
                 time_range.set_start_datetime(event["time:timestamp"])
                 open_instances.append(event["concept:name"])
-                instances[event["concept:name"]] = [time_range] if event["concept:name"] not in instances else instances[event["concept:name"]].append(time_range)
+                if event["concept:name"] not in instances:
+                    instances[event["concept:name"]] = [time_range]
+                else:
+                    instances[event["concept:name"]].append(time_range)
             elif event["lifecycle:transition"] == "complete":
                 if event["concept:name"] in open_instances:
                     open_instances.remove(event["concept:name"])
@@ -153,7 +159,7 @@ class TimeRangesConstructionUseCase(object):
                         end = activities_time_instances[name][0].end_datetime
                     duration = end - start 
                     self.shiftting_amount = timedelta(seconds = duration.total_seconds() * delta)
-                    
+                            
                 if self.is_border(transition) and self.is_start(transition):
                     active_subtrees.append(border_transitions_map[transition.name])
                     time_interval_map[border_transitions_map[transition.name]] = dict()
@@ -161,6 +167,7 @@ class TimeRangesConstructionUseCase(object):
                 if not self.is_border(transition):
                     self.construct_waiting_time_ranges(transition, activities_time_instances, timed_marking, time_interval_map, active_subtrees)
                     self.construct_service_time_ranges(transition, activities_time_instances, time_interval_map, active_subtrees, timed_marking)
+                    activities_time_instances[name].remove(activities_time_instances[name][0])
                 
                 if self.is_border(transition) and self.is_end(transition):
                     active_subtree = active_subtrees.pop(active_subtrees.index(border_transitions_map[transition.name]))
@@ -200,7 +207,6 @@ class TimeRangesConstructionUseCase(object):
         end = activities_time_instances[activity_name][0].end_datetime
         last_enabling_token =  self.get_last_timed_enabling_token(transition, timed_marking)
 
-
         if transition.label == self.target_node:
             if last_enabling_token["kpi"] == "waiting_time":
                start = start - self.shiftting_amount
@@ -210,14 +216,26 @@ class TimeRangesConstructionUseCase(object):
         elif last_enabling_token["delta"] is not None:
             start = start - self.shiftting_amount
             end = end - self.shiftting_amount
+        
+        time_range = DateTimeRange(start, end)
+        
+        for state in self.extended_process_tree.states:
+            if bool(state.change):
+                if transition.label == state.change["node"]:
+                    shifting_amout = self.get_shifting_amout(state.change["kpi"], state.change["delta"], timed_marking, transition, time_range)
+                    if state.change["kpi"] == "waiting_time":
+                        time_range.set_start_datetime(start - shifting_amout)
+                        time_range.set_end_datetime(end - shifting_amout)
+                    else:
+                        time_range.set_end_datetime(end - shifting_amout)
 
         if activity_label in time_interval_map:
             if 'service_times' in  time_interval_map[activity_label]:
-                time_interval_map[activity_label]['service_times'].append(DateTimeRange(start, end))
+                time_interval_map[activity_label]['service_times'].append(time_range)
             else:
-                time_interval_map[activity_label]['service_times'] = [DateTimeRange(start, end)]
+                time_interval_map[activity_label]['service_times'] = [time_range]
         else:
-            time_interval_map[activity_label]={'service_times': [DateTimeRange(start, end)]}
+            time_interval_map[activity_label]={'service_times': [time_range]}
        
         for active_subtree in active_subtrees:
             if 'service_times' in time_interval_map[active_subtree]:
@@ -226,7 +244,17 @@ class TimeRangesConstructionUseCase(object):
                                                                             time_interval_map[activity_label]['service_times'])
             else:
                 time_interval_map[active_subtree]["service_times"] = time_interval_map[activity_label]['service_times'].copy()
-        
+    
+    def get_shifting_amout(self, kpi, delta, timed_marking, transition, time_range):
+        if kpi == "waiting_time":
+            start = self.get_enabling_time_from_timed_marking(timed_marking, transition)
+            end = time_range.start_datetime
+        else:
+            start = time_range.start_datetime
+            end = time_range.end_datetime
+        duration = end - start 
+        return timedelta(seconds = duration.total_seconds() * delta)
+    
     def union(self, time_interval_map_subtree, time_interval_map_activity):
         for time_range in time_interval_map_activity:
             intersection_set = self.getIntersections(time_range, time_interval_map_subtree)
@@ -265,13 +293,22 @@ class TimeRangesConstructionUseCase(object):
         elif last_enabling_token["delta"] is not None:
              end = end - self.shiftting_amount
         
+        time_range = DateTimeRange(start, end)
+
+        for state in self.extended_process_tree.states:
+            if bool(state.change):
+                if transition.label == state.change["node"]:
+                    if state.change["kpi"] == "waiting_time":
+                        shifting_amout = self.get_shifting_amout(state.change["kpi"], state.change["delta"], timed_marking, transition, time_range)
+                        time_range.set_end_datetime(end - shifting_amout)
+        
         if activity_label in time_interval_map:
             if 'waiting_times' in  time_interval_map[activity_label]:
-                time_interval_map[activity_label]['waiting_times'].append(DateTimeRange(start, end))
+                time_interval_map[activity_label]['waiting_times'].append(time_range)
             else:
-                time_interval_map[activity_label]['waiting_times'] = [DateTimeRange(start, end)]
+                time_interval_map[activity_label]['waiting_times'] = [time_range]
         else:
-            time_interval_map[activity_label]={'waiting_times': [DateTimeRange(start, end)]}
+            time_interval_map[activity_label]={'waiting_times': [time_range]}
 
         for active_subtree in active_subtrees:
             if 'waiting_times' not in time_interval_map[active_subtree]:

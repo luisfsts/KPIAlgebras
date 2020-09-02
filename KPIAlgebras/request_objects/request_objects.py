@@ -54,4 +54,4 @@ class TimeShiftingRequestObject(ValidRequestObject):
             return invalid_request
         
         return cls(parameters=dict)
-            
+    

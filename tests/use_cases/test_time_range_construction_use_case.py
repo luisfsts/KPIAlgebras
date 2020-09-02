@@ -127,7 +127,7 @@ class TestTimeRangeConstructionUseCase(unittest.TestCase):
                                   'service_times': [DateTimeRange('2019-05-21T14:23:00+0000','2019-05-21T17:06:00+0000')]}}
         
         file_name_2 = "Log for Process with loop.xes"
-        path = os.path.join('/GitHub/KPIAlgebras/tests/files', file_name)
+        path = os.path.join('/GitHub/KPIAlgebras/tests/files', file_name_2)
         self.event_log_with_loops = data.EventLog(xesimporter.import_log(path))
         self.log_with_loops = self.event_log_with_loops.log
         process_tree = process_tree_util.parse("->('a', *(->('c', 'd'), tau), 'b')")
