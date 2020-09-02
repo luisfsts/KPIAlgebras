@@ -8,7 +8,7 @@ class ExtendedProcessTreeJsonEncoder(json.JSONEncoder):
                 nodes = obj.get_nodes_bottom_up()
                 to_serialize = {'name': obj.__str__(),
                                 'svg': None,
-                                'operators':"->,*,X,^",
+                                'operators':['->','*','X','^'],
                                 'nodes':[]}
 
                 for node in nodes:
