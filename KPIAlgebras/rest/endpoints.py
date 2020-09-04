@@ -16,8 +16,8 @@ from KPIAlgebras.entities import model as model_object
 from KPIAlgebras.entities import data
 from pm4py.visualization.process_tree import factory as pt_vis_factory
 from pm4py.visualization.common.utils import get_base64_from_gviz
-
 from KPIAlgebras.response_objects import response_objects
+import time
 
 blueprint = Blueprint('endpoints', __name__)
 alignments = None
@@ -26,10 +26,11 @@ model = None
 initial_marking = None
 final_marking = None
 extended_process_tree = None
-parameters = []
 
 @blueprint.route('/measurement', methods=['POST'])
 def measurement():
+    print("Begining the fine grained analysis")
+    t1 = time.perf_counter()
     parameters =  dict()
     file = request.files['eventLog']
     file.save(os.path.join(constants.upload_folder, file.filename))
@@ -42,7 +43,8 @@ def measurement():
 
     # discovery_use_case = discovery.ModelDiscoveryUseCase()
     # extended_process_tree = discovery_use_case.discover(log)
-    process_tree = process_tree_util.parse("->( 'a' , +( 'b', 'c' ), 'd' )")
+    # process_tree = process_tree_util.parse("->( 'a' , +( 'b', 'c' ), 'd' )")
+    process_tree = process_tree_util.parse("->('Create Fine', X(tau, 'Send Fine'), X(tau, 'Insert Fine Notification'), +(X(tau, 'Add penalty'), X(tau, 'Payment')), X(tau, 'Send for Credit Collection'))")
     global extended_process_tree
     extended_process_tree = model_object.ExtendedProcessTree(process_tree)
     global model, initial_marking, final_marking
@@ -66,7 +68,8 @@ def measurement():
     json_dict["svg"] = svg.decode('utf-8')
 
     extended_process_tree_json = json.dumps(json_dict, cls=serializer.ExtendedProcessTreeJsonEncoder) 
-
+    t2 = time.perf_counter()
+    print(t2-t1)
     return Response(extended_process_tree_json, mimetype='application/json',
                     status=http_response_status_code.STATUS_CODES[response.type])
 
@@ -102,7 +105,7 @@ def timeshifting():
 
 @blueprint.route('/undoChange', methods=['GET'])
 def undo_change():
-    global extended_process_tree, parameters
+    global extended_process_tree
     extended_process_tree = extended_process_tree.states.pop() 
     gviz = pt_vis_factory.apply(extended_process_tree, parameters={"format": "svg"})
     svg = get_base64_from_gviz(gviz)
@@ -110,13 +113,12 @@ def undo_change():
     json_dict = json.loads(extended_process_tree_json)
     json_dict["svg"] = svg.decode('utf-8')
     extended_process_tree_json = json.dumps(json_dict, cls=serializer.ExtendedProcessTreeJsonEncoder) 
-    # parameters = parameters[:-1] 
     return Response(extended_process_tree_json, mimetype='application/json',
                     status=http_response_status_code.STATUS_CODES[response_objects.ResponseSuccess.SUCCESS])
 
 @blueprint.route('/undoAllChanges', methods=['GET'])
 def undo_all_changes():
-    global extended_process_tree, parameters
+    global extended_process_tree
     extended_process_tree = extended_process_tree.states[0]
     gviz = pt_vis_factory.apply(extended_process_tree, parameters={"format": "svg"})
     svg = get_base64_from_gviz(gviz)
@@ -124,6 +126,5 @@ def undo_all_changes():
     json_dict = json.loads(extended_process_tree_json)
     json_dict["svg"] = svg.decode('utf-8')
     extended_process_tree_json = json.dumps(json_dict, cls=serializer.ExtendedProcessTreeJsonEncoder) 
-    # parameters = parameters[:-1]
     return Response(extended_process_tree_json, mimetype='application/json',
                     status=http_response_status_code.STATUS_CODES[response_objects.ResponseSuccess.SUCCESS])

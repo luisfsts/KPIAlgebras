@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from KPIAlgebras.entities.data import EventLog as log
 from KPIAlgebras.entities.model import PetriNet, PetriNetSemantics
 from KPIAlgebras.response_objects import response_objects as response
+import time
 
 class TimeRangesConstructionUseCase(object):
     def __init__(self, log, extended_process_tree, model, initial_marking, final_marking, alignments):
@@ -18,6 +19,8 @@ class TimeRangesConstructionUseCase(object):
         self.extended_process_tree = extended_process_tree
         
     def construct_time_ranges(self, log, alignment, model, initial_marking, final_marking):
+        print("Begining the fine grained analysis")
+        t1 = time.perf_counter()
         time_interval_map = dict()
         for index, trace in enumerate(log):
             instances = self.get_activities_time_instances(trace, alignment[index], model)
@@ -25,6 +28,8 @@ class TimeRangesConstructionUseCase(object):
             self.construct_ranges(instances, alignment[index], model, timed_marking, time_interval_map)
             self.update_extended_tree(time_interval_map)
             time_interval_map.clear()
+        t2 = time.perf_counter()
+        print(t2-t1)
         return response.ResponseSuccess(self.extended_process_tree)
     
     def shift_time_ranges(self, request_object):
@@ -41,7 +46,7 @@ class TimeRangesConstructionUseCase(object):
             self.update_extended_tree(time_interval_map, node, kpi, delta)
             self.update_cycle_times(self.extended_process_tree, time_interval_map)
             time_interval_map.clear()
-        
+            
         return response.ResponseSuccess(self.extended_process_tree)
 
     def clear_tree_kpis(self):
@@ -51,7 +56,7 @@ class TimeRangesConstructionUseCase(object):
 
     def update_extended_tree(self, time_interval_map, target_node=None, param_kpi=None, delta=None):
         nodes = self.extended_process_tree.get_nodes_bottom_up()
-        for node in nodes:
+        for node in [n for n in nodes if n.__str__() in time_interval_map and n.__str__() != "τ"]:
             for kpi in time_interval_map[node.__str__()]:
                 if kpi in node.kpis:
                     node.kpis[kpi].extend(time_interval_map[node.__str__()][kpi])
@@ -147,7 +152,7 @@ class TimeRangesConstructionUseCase(object):
                 name = transition.name if self.is_border(transition) else transition.label
                 time = None
 
-                if name == node:
+                if node is not None and name == node:
                     last_enabling_token = self.get_last_timed_enabling_token(transition, timed_marking)
                     last_enabling_token["delta"] = delta
                     last_enabling_token["kpi"] = kpi
@@ -164,7 +169,7 @@ class TimeRangesConstructionUseCase(object):
                     active_subtrees.append(border_transitions_map[transition.name])
                     time_interval_map[border_transitions_map[transition.name]] = dict()
                 
-                if not self.is_border(transition):
+                if not self.is_border(transition) and transition.label is not None:
                     self.construct_waiting_time_ranges(transition, activities_time_instances, timed_marking, time_interval_map, active_subtrees)
                     self.construct_service_time_ranges(transition, activities_time_instances, time_interval_map, active_subtrees, timed_marking)
                     activities_time_instances[name].remove(activities_time_instances[name][0])
@@ -175,7 +180,7 @@ class TimeRangesConstructionUseCase(object):
                 
                 if name in time_interval_map:
                     time = time_interval_map[name]["service_times"][0].end_datetime
-                else:
+                elif name in activities_time_instances:
                     last_enabling_token = self.get_last_timed_enabling_token(transition, timed_marking)
                     if last_enabling_token["delta"] is not None:
                         time = activities_time_instances[name][0].start_datetime - self.shiftting_amount
@@ -187,17 +192,18 @@ class TimeRangesConstructionUseCase(object):
         return time_interval_map
 
     def construct_idle_time_ranges(self, time_interval_map, active_subtree):
-        idle_times = []
-        for index, time_range in enumerate(time_interval_map[active_subtree]["service_times"]):
-            size= len(time_interval_map[active_subtree]["service_times"]) - 1
-            if index < size:
-                idle_times.append(DateTimeRange(time_range.end_datetime, 
-                                                time_interval_map[active_subtree]["service_times"][index+1].start_datetime))
-        
-        if 'idle_times' in  time_interval_map[active_subtree]:
-            time_interval_map[active_subtree]['idle_times'].extend(idle_times)
-        else:
-            time_interval_map[active_subtree]['idle_times'] = idle_times
+        if "service_times" in time_interval_map[active_subtree]:
+            idle_times = []
+            for index, time_range in enumerate(time_interval_map[active_subtree]["service_times"]):
+                size= len(time_interval_map[active_subtree]["service_times"]) - 1
+                if index < size:
+                    idle_times.append(DateTimeRange(time_range.end_datetime, 
+                                                    time_interval_map[active_subtree]["service_times"][index+1].start_datetime))
+            
+            if 'idle_times' in  time_interval_map[active_subtree]:
+                time_interval_map[active_subtree]['idle_times'].extend(idle_times)
+            else:
+                time_interval_map[active_subtree]['idle_times'] = idle_times
 
     def construct_service_time_ranges(self, transition, activities_time_instances, time_interval_map, active_subtrees, timed_marking):
         activity_instances = activities_time_instances[transition.name] if self.is_border(transition) else activities_time_instances[transition.label]
@@ -274,8 +280,12 @@ class TimeRangesConstructionUseCase(object):
     def merge_intervals(self, time_range, intersection_set):
         merged_intervals = []
         for range in intersection_set:
-            if time_range.encompass(range) not in merged_intervals:
-                merged_intervals.append(time_range.encompass(range))
+            merged_range = time_range.encompass(range)
+            for merged_interval in merged_intervals:
+                if merged_range.is_intersection(merged_interval) or merged_interval.is_intersection(merged_range):
+                    merged_range = merged_range.encompass(merged_interval)
+            if merged_range not in merged_intervals:
+                merged_intervals.append(merged_range)
 
         return merged_intervals
 

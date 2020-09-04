@@ -1,8 +1,11 @@
 from datetimerange import DateTimeRange
 from KPIAlgebras.response_objects import response_objects as response
+import time
 
 class CycleTimeAnalysisUseCase(object):
     def analyse(self, log, alignments, process_tree, model):
+        print("Begining the Cycle time analysis")
+        t1 = time.perf_counter()
         cycle_time_ranges =  dict()
 
         for alignment_index, alignment in enumerate(alignments):
@@ -10,11 +13,13 @@ class CycleTimeAnalysisUseCase(object):
             self.construct_cycle_time_ranges(instances, alignment, process_tree, model, cycle_time_ranges)
             self.update_extended_tree(cycle_time_ranges, process_tree)
             cycle_time_ranges.clear()
+        t2 = time.perf_counter()
+        print(t2-t1)
         return response.ResponseSuccess(process_tree)
 
     def update_extended_tree(self, time_interval_map, extended_process_tree):
         nodes = extended_process_tree.get_nodes_bottom_up()
-        for node in nodes:
+        for node in [n for n in nodes if n.__str__() in time_interval_map and n.__str__() != "τ"]:
             for kpi in time_interval_map[node.__str__()]:
                 if kpi in node.kpis:
                     node.kpis[kpi].extend(time_interval_map[node.__str__()][kpi])
@@ -70,17 +75,19 @@ class CycleTimeAnalysisUseCase(object):
         operators_list = [node for node in process_tree.get_nodes_bottom_up() if node.children]
         ranges = []
         for operator in operators_list:
-            for child in operator.children:
+            for child in [node for node in operator.children if node.__str__() in cycle_time_ranges and node.__str__() != "τ"]:
                 ranges.extend(cycle_time_ranges[child.__str__()]["cycle_times"])
-            start = min(ranges, key = lambda range: range.start_datetime).start_datetime
-            end = max(ranges, key = lambda range: range.end_datetime).end_datetime
-            cycle_time_ranges[operator.__str__()]={'cycle_times': [DateTimeRange(start, end)]}
+            if ranges:    
+                start = min(ranges, key = lambda range: range.start_datetime).start_datetime
+                end = max(ranges, key = lambda range: range.end_datetime).end_datetime
+                cycle_time_ranges[operator.__str__()]={'cycle_times': [DateTimeRange(start, end)]}
+                ranges.clear()
            
     def construct_cycle_time_ranges_for_leafs(self, activity_instances, alignment, process_tree, model, cycle_time_ranges):
         for index, move in enumerate(alignment["alignment"]):
             if self.is_model_or_sync_move(move):
                 transition = self.get_transition_from_move(move, model.transitions)
-                if not self.is_border(transition):
+                if not self.is_border(transition) and transition.label is not None:
                     #TODO include preceding_moves to deal with loops
                     # preceding_moves = alignment["alignment"][:index]
                     self.construct_ranges(transition, cycle_time_ranges, activity_instances)
@@ -107,7 +114,7 @@ class CycleTimeAnalysisUseCase(object):
     def get_enabling_time_preceding_moves(self, transition, activity_instances):
         input_places = [arc.source for arc in transition.in_arcs]
         enablers = [arc.source for place in input_places for arc in place.in_arcs]
-        visible_enablers = [enabler if enabler.label is not None else 
+        visible_enablers = [enabler if enabler.label is not None and enabler.label in activity_instances else 
                            self.get_enabling_time_preceding_moves(enabler, activity_instances) for enabler in enablers]
         visible_enablers = [enabler for enabler in visible_enablers if enabler is not None]                
 
