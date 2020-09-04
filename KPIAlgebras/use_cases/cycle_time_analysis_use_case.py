@@ -44,16 +44,16 @@ class CycleTimeAnalysisUseCase(object):
                 else:
                     instances[event["concept:name"]]= [DateTimeRange(event["time:timestamp"], event["time:timestamp"])]
         
-        border_moves = [move for move in alignment["alignment"] if move[0][0] == ">>"] 
+        # border_moves = [move for move in alignment["alignment"] if move[0][0] == ">>"] 
 
-        for index, border_move in enumerate(border_moves):
-            move_name = self.get_move_name(border_move)
-            if index == 0:
-                instances[move_name] = [DateTimeRange(instances[trace[0]["concept:name"]][0].start_datetime, instances[trace[0]["concept:name"]][0].start_datetime)]
-            else:
-                last_move = self.get_last_visible_move(border_move, alignment, instances)
-                last_move_label = self.get_move_label(last_move)
-                instances[move_name] = [DateTimeRange(instance.end_datetime, instance.end_datetime) for instance in instances[last_move_label]]
+        # for index, border_move in enumerate(border_moves):
+        #     move_name = self.get_move_name(border_move)
+        #     if index == 0:
+        #         instances[move_name] = [DateTimeRange(instances[trace[0]["concept:name"]][0].start_datetime, instances[trace[0]["concept:name"]][0].start_datetime)]
+        #     else:
+        #         last_move = self.get_last_visible_move(border_move, alignment, instances)
+        #         last_move_label = self.get_move_label(last_move)
+        #         instances[move_name] = [DateTimeRange(instance.end_datetime, instance.end_datetime) for instance in instances[last_move_label]]
         return instances
 
     def get_last_visible_move(self, move, alignment, instances):

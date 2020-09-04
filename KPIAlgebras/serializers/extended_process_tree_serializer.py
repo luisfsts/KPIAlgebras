@@ -17,10 +17,10 @@ class ExtendedProcessTreeJsonEncoder(json.JSONEncoder):
                     avg_waiting_time = str(sum([(range.end_datetime - range.start_datetime) for range 
                                             in node.kpis["waiting_times"]], datetime.timedelta())/len(node.kpis["waiting_times"])) if "waiting_times" in node.kpis and node.kpis["waiting_times"] else None
                     avg_service_time = str(sum([(range.end_datetime - range.start_datetime) for range 
-                                                in node.kpis["service_times"]], datetime.timedelta())/(len(node.kpis["cycle_times"]) 
+                                                in node.kpis["service_times"]], datetime.timedelta())/(len(node.kpis["waiting_times"]) 
                                                 if node.children else len(node.kpis["service_times"]))) if "service_times" in node.kpis and node.kpis["service_times"] else None
                     avg_idle_time =  str(sum([(range.end_datetime - range.start_datetime) for range 
-                                        in node.kpis["idle_times"]], datetime.timedelta())/len(node.kpis["cycle_times"])) if "idle_times" in node.kpis and node.kpis["idle_times"] else "0:00:00"
+                                        in node.kpis["idle_times"]], datetime.timedelta())/len(node.kpis["waiting_times"])) if "idle_times" in node.kpis and node.kpis["idle_times"] else "0:00:00"
                     to_serialize["nodes"].append({'name': node.__str__(),
                                                 'operator': node.operator.name if node.operator is not None else None,
                                                 'kpis':{'cycle_time': avg_cycle_time,

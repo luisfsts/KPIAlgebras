@@ -43,8 +43,8 @@ def measurement():
 
     # discovery_use_case = discovery.ModelDiscoveryUseCase()
     # extended_process_tree = discovery_use_case.discover(log)
-    # process_tree = process_tree_util.parse("->( 'a' , +( 'b', 'c' ), 'd' )")
-    process_tree = process_tree_util.parse("->('Create Fine', X(tau, 'Send Fine'), X(tau, 'Insert Fine Notification'), +(X(tau, 'Add penalty'), X(tau, 'Payment')), X(tau, 'Send for Credit Collection'))")
+    process_tree = process_tree_util.parse("->( 'a' , +( 'b', 'c' ), 'd' )")
+    # process_tree = process_tree_util.parse("->('Create Fine', X(tau, 'Send Fine'), X(tau, 'Insert Fine Notification'), +(X(tau, 'Add penalty'), X(tau, 'Payment')), X(tau, 'Send for Credit Collection'))")
     global extended_process_tree
     extended_process_tree = model_object.ExtendedProcessTree(process_tree)
     global model, initial_marking, final_marking
@@ -80,10 +80,7 @@ def timeshifting():
     if parameters is None:
         parameters = dict()
         for arg, value in request.args.items():
-            if arg == 'target_node':
-                parameters[arg] = json.loads(value)
-            else:
-                parameters[arg] = value
+            parameters[arg] = value
                 
     request_object = request_objects.TimeShiftingRequestObject.from_dict(parameters)
 
