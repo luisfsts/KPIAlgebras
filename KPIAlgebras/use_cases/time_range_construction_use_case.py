@@ -23,6 +23,7 @@ class TimeRangesConstructionUseCase(object):
         t1 = time.perf_counter()
         time_interval_map = dict()
         for index, trace in enumerate(log):
+            print(index)
             instances = self.get_activities_time_instances(trace, alignment[index], model)
             timed_marking = self.get_timed_marking(initial_marking, trace[0]["time:timestamp"])
             self.construct_ranges(instances, alignment[index], model, timed_marking, time_interval_map)
@@ -40,6 +41,7 @@ class TimeRangesConstructionUseCase(object):
         self.clear_tree_kpis()
         
         for index, trace in enumerate(self.log):
+            print(index)
             instances = self.get_activities_time_instances(trace, self.alignments[index], self.model)
             timed_marking = self.get_timed_marking(self.initial_marking, trace[0]["time:timestamp"])
             self.construct_ranges(instances, self.alignments[index], self.model, timed_marking, time_interval_map, node, kpi, delta)
@@ -244,13 +246,19 @@ class TimeRangesConstructionUseCase(object):
             time_interval_map[activity_label]={'service_times': [time_range]}
        
         for active_subtree in active_subtrees:
-            if 'service_times' in time_interval_map[active_subtree]:
-                #TODO refactor: the union method is already modifiying the list
-                time_interval_map[active_subtree]["service_times"] = self.union(time_interval_map[active_subtree]["service_times"], 
-                                                                            time_interval_map[activity_label]['service_times'])
-            else:
-                time_interval_map[active_subtree]["service_times"] = time_interval_map[activity_label]['service_times'].copy()
+            if self.are_related(transition, active_subtree):
+                if 'service_times' in time_interval_map[active_subtree]:
+                    #TODO refactor: the union method is already modifiying the list
+                    time_interval_map[active_subtree]["service_times"] = self.union(time_interval_map[active_subtree]["service_times"], 
+                                                                                time_interval_map[activity_label]['service_times'])
+                else:
+                    time_interval_map[active_subtree]["service_times"] = time_interval_map[activity_label]['service_times'].copy()
     
+    def are_related(self, transition, sub_tree_rep):
+        sub_tree = [tree for tree in self.extended_process_tree.get_nodes_bottom_up() if tree.__str__() == sub_tree_rep][0]
+        nodes = [node for node in sub_tree.get_nodes_bottom_up() if node.__str__() == transition.label]
+        return bool(nodes)
+        
     def get_shifting_amout(self, kpi, delta, timed_marking, transition, time_range):
         if kpi == "waiting_time":
             start = self.get_enabling_time_from_timed_marking(timed_marking, transition)
@@ -284,6 +292,7 @@ class TimeRangesConstructionUseCase(object):
             for merged_interval in merged_intervals:
                 if merged_range.is_intersection(merged_interval) or merged_interval.is_intersection(merged_range):
                     merged_range = merged_range.encompass(merged_interval)
+                    merged_intervals.remove(merged_interval)
             if merged_range not in merged_intervals:
                 merged_intervals.append(merged_range)
 

@@ -43,7 +43,8 @@ def measurement():
 
     # discovery_use_case = discovery.ModelDiscoveryUseCase()
     # extended_process_tree = discovery_use_case.discover(log)
-    process_tree = process_tree_util.parse("->( 'a' , +( 'b', 'c' ), 'd' )")
+    # process_tree = process_tree_util.parse("->( 'a' , +( 'b', 'c' ), 'd' )")
+    process_tree = process_tree_util.parse("->('start', +('a', ->('b', 'c', 'd')), 'end')")
     # process_tree = process_tree_util.parse("->('Create Fine', X(tau, 'Send Fine'), X(tau, 'Insert Fine Notification'), +(X(tau, 'Add penalty'), X(tau, 'Payment')), X(tau, 'Send for Credit Collection'))")
     global extended_process_tree
     extended_process_tree = model_object.ExtendedProcessTree(process_tree)

@@ -2,6 +2,7 @@
 # Default ignored files
 .idea/
 .vscode/
+experiments/
 *.code-workspace
 Pipfile
 Pipfile.lock
