@@ -74,7 +74,7 @@ class TimeRangesConstructionUseCase(object):
             waiting_ranges = []
             service_ranges = []
             if node.children:
-                for child in node.children:
+                for child in [c for c in node.children if c.__str__() in time_interval_map]:
                         waiting_ranges.extend(time_interval_map[child.__str__()]["waiting_times"])
                         service_ranges.extend(time_interval_map[child.__str__()]["service_times"])
                 start = min(waiting_ranges, key = lambda range: range.start_datetime).start_datetime

@@ -1,5 +1,6 @@
 from pm4py.objects.process_tree.process_tree import ProcessTree
 from pm4py.objects.petri.petrinet import PetriNet
+import datetime
 from copy import copy
 
 
@@ -51,6 +52,13 @@ class ExtendedProcessTree(ProcessTree):
             else:
                 stack.pop()
         yield from nodes[::-1]
+    
+    def get_avg_kpi_value(self, kpi):
+        if kpi in self.__kpis:
+            return sum([(range.end_datetime - range.start_datetime) for range in self.__kpis[kpi]], datetime.timedelta())/len(self.__kpis[kpi])
+        t = datetime.datetime.strptime("00:00:00", "%H:%M:%S")
+        result = datetime.timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
+        return result
 
 class PetriNet(PetriNet):
     def __init__(self, petri_net):

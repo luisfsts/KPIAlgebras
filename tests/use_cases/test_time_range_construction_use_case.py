@@ -137,6 +137,8 @@ class TestTimeRangeConstructionUseCase(unittest.TestCase):
         transition_b = [transition.name for transition in self.model_with_loops.transitions if transition.label == "b"][0]
         transition_c = [transition.name for transition in self.model_with_loops.transitions if transition.label == "c"][0]
         transition_d = [transition.name for transition in self.model_with_loops.transitions if transition.label == "d"][0]
+        silent_transition = [transition.name for transition in self.model_with_loops.transitions if transition.label is None and 
+                              (not transition.name.endswith("_start") and not not transition.name.endswith("_end"))][0]
         self.alignments_with_loops = [{'alignment': [(('t_0_1598948941.94495631998', '>>'), (None, '>>')), 
                                                     (('>>', "->( 'a', *( ->( 'c', 'd' ), τ ), 'b' )_start"), ('>>', None)), 
                                                     (('t_a_0', transition_a), ('a', 'a')), 
@@ -145,7 +147,7 @@ class TestTimeRangeConstructionUseCase(unittest.TestCase):
                                                     (('t_c_1', transition_c), ('c', 'c')), 
                                                     (('t_d_2', transition_d), ('d', 'd')), 
                                                     (('>>', "->( 'c', 'd' )_end"), ('>>', None)), 
-                                                    (('>>', 't_0_1598948915.713045752'), ('>>', None)), 
+                                                    (('>>', silent_transition), ('>>', None)), 
                                                     (('>>', "->( 'c', 'd' )_start"), ('>>', None)), 
                                                     (('t_c_3', transition_c), ('c', 'c')), 
                                                     (('t_d_4', transition_d), ('d', 'd')), 

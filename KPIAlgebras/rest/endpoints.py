@@ -8,13 +8,13 @@ from KPIAlgebras.use_cases import model_discovery_use_case as discovery
 from KPIAlgebras.use_cases import alignment_computation_use_case as alignment
 from KPIAlgebras.use_cases import time_range_construction_use_case as measurement_fine_grained
 from KPIAlgebras.use_cases import cycle_time_analysis_use_case as measurement_high_level
+from KPIAlgebras.use_cases import decorate_extended_process_tree_use_case as decorate_tree
 from KPIAlgebras.serializers import extended_process_tree_serializer as serializer
 from KPIAlgebras.request_objects import request_objects 
 from pm4py.objects.conversion.process_tree.converter import to_petri_net_transition_bordered as converter
 from pm4py.objects.process_tree import util as process_tree_util
 from KPIAlgebras.entities import model as model_object
 from KPIAlgebras.entities import data
-from pm4py.visualization.process_tree import factory as pt_vis_factory
 from pm4py.visualization.common.utils import get_base64_from_gviz
 from KPIAlgebras.response_objects import response_objects
 import time
@@ -43,9 +43,9 @@ def measurement():
 
     # discovery_use_case = discovery.ModelDiscoveryUseCase()
     # extended_process_tree = discovery_use_case.discover(log)
-    # process_tree = process_tree_util.parse("->( 'a' , +( 'b', 'c' ), 'd' )")
-    process_tree = process_tree_util.parse("->('start', +('a', ->('b', 'c', 'd')), 'end')")
-    # process_tree = process_tree_util.parse("->('Create Fine', X(tau, 'Send Fine'), X(tau, 'Insert Fine Notification'), +(X(tau, 'Add penalty'), X(tau, 'Payment')), X(tau, 'Send for Credit Collection'))")
+    process_tree = process_tree_util.parse("->( 'a' , +( 'b', 'c' ), 'd' )")
+    # process_tree = process_tree_util.parse("->('start', +('a', ->('b', 'c', 'd')), 'end')")
+    # process_tree = process_tree_util.parse("->('Create Fine', X(tau, ->('Send Fine', 'Insert Fine Notification')), +(X(tau, 'Add penalty'), X(tau, 'Payment')), X(tau, 'Send for Credit Collection'))")
     global extended_process_tree
     extended_process_tree = model_object.ExtendedProcessTree(process_tree)
     global model, initial_marking, final_marking
@@ -61,7 +61,8 @@ def measurement():
     fine_grained_use_case = measurement_fine_grained.TimeRangesConstructionUseCase(log, extended_process_tree, model, initial_marking, final_marking, alignments) 
     response = fine_grained_use_case.construct_time_ranges(log.log, alignments, model, initial_marking, final_marking)
 
-    gviz = pt_vis_factory.apply(extended_process_tree, parameters={"format": "svg"})
+    decoration_use_case = decorate_tree.DecorateExtendedProcessTreeUseCase()
+    gviz = decoration_use_case.decorate(extended_process_tree)
     svg = get_base64_from_gviz(gviz)
 
     extended_process_tree_json = json.dumps(response.value, cls=serializer.ExtendedProcessTreeJsonEncoder)
@@ -90,7 +91,8 @@ def timeshifting():
     fine_grained_use_case = measurement_fine_grained.TimeRangesConstructionUseCase(log.log, extended_process_tree, model, initial_marking, final_marking, alignments) 
     response =  fine_grained_use_case.shift_time_ranges(request_object)
 
-    gviz = pt_vis_factory.apply(extended_process_tree, parameters={"format": "svg"})
+    decoration_use_case = decorate_tree.DecorateExtendedProcessTreeUseCase()
+    gviz = decoration_use_case.decorate(extended_process_tree)
     svg = get_base64_from_gviz(gviz)
     extended_process_tree_json = json.dumps(response.value, cls=serializer.ExtendedProcessTreeJsonEncoder)
     json_dict = json.loads(extended_process_tree_json)
@@ -105,7 +107,8 @@ def timeshifting():
 def undo_change():
     global extended_process_tree
     extended_process_tree = extended_process_tree.states.pop() 
-    gviz = pt_vis_factory.apply(extended_process_tree, parameters={"format": "svg"})
+    decoration_use_case = decorate_tree.DecorateExtendedProcessTreeUseCase()
+    gviz = decoration_use_case.decorate(extended_process_tree)
     svg = get_base64_from_gviz(gviz)
     extended_process_tree_json = json.dumps(extended_process_tree, cls=serializer.ExtendedProcessTreeJsonEncoder)
     json_dict = json.loads(extended_process_tree_json)
@@ -118,7 +121,8 @@ def undo_change():
 def undo_all_changes():
     global extended_process_tree
     extended_process_tree = extended_process_tree.states[0]
-    gviz = pt_vis_factory.apply(extended_process_tree, parameters={"format": "svg"})
+    decoration_use_case = decorate_tree.DecorateExtendedProcessTreeUseCase()
+    gviz = decoration_use_case.decorate(extended_process_tree)
     svg = get_base64_from_gviz(gviz)
     extended_process_tree_json = json.dumps(extended_process_tree, cls=serializer.ExtendedProcessTreeJsonEncoder)
     json_dict = json.loads(extended_process_tree_json)

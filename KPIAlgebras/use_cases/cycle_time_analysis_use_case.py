@@ -2,11 +2,12 @@ from datetimerange import DateTimeRange
 from KPIAlgebras.response_objects import response_objects as response
 import time
 
+
 class CycleTimeAnalysisUseCase(object):
     def analyse(self, log, alignments, process_tree, model):
         print("Begining the Cycle time analysis")
         t1 = time.perf_counter()
-        cycle_time_ranges =  dict()
+        cycle_time_ranges = dict()
 
         for alignment_index, alignment in enumerate(alignments):
             instances = self.get_activities_time_instances(log[alignment_index], alignment, model)
@@ -98,12 +99,12 @@ class CycleTimeAnalysisUseCase(object):
         end = activity_instances[transition.label][0].end_datetime
         
         if transition.label in cycle_time_ranges:
-            if 'cycle_times' in  cycle_time_ranges[transition.label]:
+            if 'cycle_times' in cycle_time_ranges[transition.label]:
                 cycle_time_ranges[transition.label]['cycle_times'].append(DateTimeRange(start, end))
             else:
-                time_interval_map[transition.label]['cycle_times'] = [DateTimeRange(start, end)]
+                cycle_time_ranges[transition.label]['cycle_times'] = [DateTimeRange(start, end)]
         else:
-            cycle_time_ranges[transition.label]={'cycle_times': [DateTimeRange(start, end)]}
+            cycle_time_ranges[transition.label] = {'cycle_times': [DateTimeRange(start, end)]}
         
     def is_model_or_sync_move(self, move):
         return move[0][1] != ">>"
@@ -137,5 +138,3 @@ class CycleTimeAnalysisUseCase(object):
         for key, value in marking.items():
             timed_marking[key] = {'time':time_stamp, 'delta': None}
         return timed_marking
-    
-   

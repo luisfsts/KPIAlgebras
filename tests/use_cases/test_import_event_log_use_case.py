@@ -7,7 +7,7 @@ from KPIAlgebras.request_objects import request_objects
 
 class TestImportEventLogUseCase(unittest.TestCase):
     def setUp(self):
-        self.file_name = 'partially_ordered_test_log.xes'
+        self.file_name = 'partially_ordered_test_log2.xes'
 
     def test_import_event_log_from_xes(self):
         use_case = importer.ImportEventLogUseCase()
