@@ -1,0 +1,14 @@
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h3">Import Event Log</h1>
+</div>
+<form novalidate>
+    <div class="input-group mb-3 import">
+        <div class="custom-file">
+            <input type="file" class="custom-file-input" multiple formControlName="importFile" id="importFile" (change)="onFileChange($event.target.files)" >
+            <label class="custom-file-label" #labelImport for="importFile" aria-describedby="inputGroupFileAddon02">Choose file</label>
+        </div>
+        <div class="input-group-append">
+            <button class="btn btn-outline-secondary" id="inputGroupFileAddon02" type="button" (click)="import()">Upload</button>
+        </div>
+    </div>
+</form>

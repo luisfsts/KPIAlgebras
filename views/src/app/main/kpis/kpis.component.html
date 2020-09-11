@@ -1,0 +1,77 @@
+<div class="container-fluid mainContainer">
+    <div class="row row-fixed">
+        <div class="col-sm-8 im imgContainer">
+            <img [src]="svgData" alt="Image" />
+        </div>
+        <div class="col-sm-2 bg-light sidebar">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Worflow Control</h5>
+                </div>
+                <div class="card-body">
+                    <select class="custom-select" id="inputGroupSelect03" (change)="selectNodeChangeHandler($event)">
+                        <option>Choose...</option>
+                        <option *ngFor="let node of data.nodes">{{node.name}}</option>
+                    </select>
+                    <div *ngIf="selectedNode && hasChildren == false">
+                       <select class="custom-select" id="inputGroupSelect02" (change)="selectKpiChangeHandler($event)">
+                          <option>Choose...</option>
+                          <option *ngFor="let item of kpis">{{item}}</option>
+                        </select>
+                        <input  *ngIf="selectedKpi" [(ngModel)]= "delta" type="text" class="form-control" id="delta" placeholder="Decreasing amount(%)">
+                    </div>
+                    <select *ngIf="selectedNode && hasChildren" class="custom-select" id="inputGroupSelect01" (change)="selectOperatorChangeHandler($event)">
+                        <option>Choose...</option>
+                        <option *ngFor="let item of data.operators">{{item}}</option>
+                    </select>
+                    <div *ngIf="selectedOperator && selectedOperator == 'X'">
+                        <div *ngFor="let item of selectedNode.children">
+                            <input type="text" class="form-control" [id]=item placeholder="Routing probabilities">
+                        </div>
+                    </div>
+                    <div *ngIf="selectedOperator && selectedOperator == '*'">
+                        <input [(ngModel)]= "loopProbability" type="text" class="form-control" id="loopProbability" placeholder="Loop probabilities">
+                    </div>
+                </div>
+                <div  *ngIf="selectedNode && hasChildren" class="card-body">
+                    <button [disabled]= "isChangeOperatorDisabled()" class="btn btn-primary btn-sm" (click)="redesign()">Change operator</button>
+                    <button [disabled]= "isUndoChangeDisabled()" type="button" class="btn btn-secondary btn-sm" (click)="undoChange()">Undo change</button>
+                </div>
+                <div  *ngIf="selectedNode && hasChildren == false" class="card-body">
+                    <button [disabled]= "isChangeLeafDisabled()" class="btn btn-primary btn-sm" (click)="redesign()">Compute</button>
+                    <button [disabled]= "isUndoChangeDisabled()" type="button" class="btn btn-secondary btn-sm" (click)="undoChange()">Undo change</button>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Node KPIs</h5>
+                    </div>
+                    <div *ngIf="selectedNode"class="card-body">
+                        <div *ngFor="let item of selectedNode.kpis | keyvalue">
+                            {{item.key}}:   {{item.value}}
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Node Original KPIs</h5>
+                    </div>
+                    <div *ngIf="selectedNodeOriginalData"class="card-body">
+                        <div *ngFor="let item of selectedNodeOriginalData.kpis | keyvalue">
+                            {{item.key}}:   {{item.value}}
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <button [disabled]= "isUndoChangeDisabled()" type="button" class="btn btn-secondary btn-sm" (click)="undoAllChanges()">Undo all changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+
+
