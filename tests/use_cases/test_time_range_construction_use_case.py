@@ -138,7 +138,7 @@ class TestTimeRangeConstructionUseCase(unittest.TestCase):
         transition_c = [transition.name for transition in self.model_with_loops.transitions if transition.label == "c"][0]
         transition_d = [transition.name for transition in self.model_with_loops.transitions if transition.label == "d"][0]
         silent_transition = [transition.name for transition in self.model_with_loops.transitions if transition.label is None and 
-                              (not transition.name.endswith("_start") and not not transition.name.endswith("_end"))][0]
+                              (not transition.name.endswith("_start") and not transition.name.endswith("_end"))][0]
         self.alignments_with_loops = [{'alignment': [(('t_0_1598948941.94495631998', '>>'), (None, '>>')), 
                                                     (('>>', "->( 'a', *( ->( 'c', 'd' ), τ ), 'b' )_start"), ('>>', None)), 
                                                     (('t_a_0', transition_a), ('a', 'a')), 
@@ -158,8 +158,8 @@ class TestTimeRangeConstructionUseCase(unittest.TestCase):
                                                     (('t_1_1598948941.94495633537', '>>'), (None, '>>'))], 
                                                     'cost': 11, 'visited_states': 18, 'queued_states': 43, 'traversed_arcs': 43}]
         
-        self.time_ranges_with_loops = {"->('a', *(->('c', 'd'), tau), 'b')": {'waiting_times':[DateTimeRange('1970-01-01T01:00:00+01:00', '1970-01-01T01:00:00+01:00')],
-                                                                'service_times': [DateTimeRange('2019-05-20T01:00:00+0000','1970-01-01T01:10:30+01:00'), 
+        self.time_ranges_with_loops = {"->( 'a', *( ->( 'c', 'd' ), τ ), 'b' )": {'waiting_times':[DateTimeRange('1970-01-01T01:00:00+01:00', '1970-01-01T01:00:00+01:00')],
+                                                                'service_times': [DateTimeRange('1970-01-01T01:00:00+01:00','1970-01-01T01:10:30+01:00'), 
                                                                                     DateTimeRange('1970-01-01T01:12:30+01:00','1970-01-01T01:18:26+01:00' ), 
                                                                                     DateTimeRange('1970-01-01T02:08:32+01:00', '1970-01-01T02:22:26+01:00'),
                                                                                     DateTimeRange('1970-01-01T02:24:11+01:00', '1970-01-01T02:33:09+01:00'),
@@ -180,7 +180,7 @@ class TestTimeRangeConstructionUseCase(unittest.TestCase):
                                                                   DateTimeRange('1970-01-01T03:24:35+01:00','1970-01-01T03:35:26+01:00')],
                                                 'idle_times': [DateTimeRange('1970-01-01T01:18:26+01:00','1970-01-01T02:08:32+01:00'),
                                                                 DateTimeRange('1970-01-01T02:33:09+01:00','1970-01-01T03:24:35+01:00')]},
-                            "*( ->( 'c', 'd' ), tau)":{'waiting_times': [DateTimeRange('2019-05-20T12:30:00+0000','2019-05-20T12:51:00+0000')],
+                            "*( ->( 'c', 'd' ), τ )":{'waiting_times': [DateTimeRange('1970-01-01T01:10:30+01:00','1970-01-01T01:12:30+01:00')],
                                                 'service_times': [DateTimeRange('1970-01-01T01:12:30+01:00','1970-01-01T01:18:26+01:00'),
                                                                   DateTimeRange('1970-01-01T02:08:32+01:00','1970-01-01T02:22:26+01:00'),
                                                                   DateTimeRange('1970-01-01T02:24:11+01:00','1970-01-01T02:33:09+01:00'),
@@ -219,7 +219,8 @@ class TestTimeRangeConstructionUseCase(unittest.TestCase):
                                                     self.initial_marking_with_loops, 
                                                     self.final_marking_with_loops)
         for node in response.value.get_nodes_bottom_up():
-            self.assertDictEqual(self.time_ranges[node.__str__()], node.kpis)
+            if node.__str__() != "τ":
+                  self.assertDictEqual(self.time_ranges_with_loops[node.__str__()], node.kpis)
         
     # def test_waiting_time_shifting_on_parallel_construction_with_no_gains(self):
     #     use_case = measurement.TimeRangesConstructionUseCase(self.log, self.extended_process_tree, self.model, self.initial_marking, self.final_marking, self.alignments) 

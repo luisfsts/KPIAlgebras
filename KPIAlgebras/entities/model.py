@@ -97,3 +97,6 @@ class PetriNetSemantics(object):
             last_executed_token = max(enabling_tokens, key=(lambda token: token["time"]))
             resulting_marking[arc.target] = {'time': time_stamp, 'delta': last_executed_token["delta"]}
         return resulting_marking
+    
+    def get_time_from_marking(self, marking):
+        return max([place["time"] for place in marking.values()])

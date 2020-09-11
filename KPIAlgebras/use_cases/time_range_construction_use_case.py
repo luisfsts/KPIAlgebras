@@ -112,24 +112,8 @@ class TimeRangesConstructionUseCase(object):
                     open_instance.set_end_datetime(event["time:timestamp"])
                 else:
                     instances[event["concept:name"]]= [DateTimeRange(event["time:timestamp"], event["time:timestamp"])]
-        
-        border_moves = [move for move in alignment["alignment"] if move[0][0] == ">>"] 
-
-        for index, border_move in enumerate(border_moves):
-            move_name = self.get_move_name(border_move)
-            if index == 0:
-                instances[move_name] = [DateTimeRange(instances[trace[0]["concept:name"]][0].start_datetime, instances[trace[0]["concept:name"]][0].start_datetime)]
-            else:
-                last_move = self.get_last_visible_move(border_move, alignment, instances)
-                last_move_label = self.get_move_label(last_move)
-                instances[move_name] = [DateTimeRange(instance.end_datetime, instance.end_datetime) for instance in instances[last_move_label]]
         return instances
     
-    def get_last_visible_move(self, move, alignment, instances):
-        last_moves = [move for move in alignment["alignment"][:alignment["alignment"].index(move)] if self.get_move_label(move) is not None and self.get_move_label(move) != ">>" ]
-        sorted_last_moves_list = sorted(last_moves, key=lambda x: instances[self.get_move_label(x)][-1].end_datetime)
-        return sorted_last_moves_list[-1]
-
     def get_move_name(self, move):
         return move[0][1]
     
@@ -147,7 +131,8 @@ class TimeRangesConstructionUseCase(object):
         timed_marking = initial_marking
         active_subtrees = []
         self.target_node = node
-        
+        semantics = PetriNetSemantics(model)
+
         for move in alignment["alignment"]:
             if self.is_model_or_sync_move(move):
                 transition = self.get_transition_from_move(move, model.transitions)
@@ -169,7 +154,12 @@ class TimeRangesConstructionUseCase(object):
                             
                 if self.is_border(transition) and self.is_start(transition):
                     active_subtrees.append(border_transitions_map[transition.name])
-                    time_interval_map[border_transitions_map[transition.name]] = dict()
+                    start = semantics.get_time_from_marking(timed_marking)
+                    end = self.get_startinh_time_from_next_sync_move(move, alignment["alignment"], activities_time_instances)
+                    if border_transitions_map[transition.name] not in time_interval_map:
+                        time_interval_map[border_transitions_map[transition.name]] = {"waiting_times": [DateTimeRange(start, end)]}
+                    else:
+                        time_interval_map[border_transitions_map[transition.name]]["waiting_times"].append(DateTimeRange(start, end))
                 
                 if not self.is_border(transition) and transition.label is not None:
                     self.construct_waiting_time_ranges(transition, activities_time_instances, timed_marking, time_interval_map, active_subtrees)
@@ -181,17 +171,20 @@ class TimeRangesConstructionUseCase(object):
                     self.construct_idle_time_ranges(time_interval_map, active_subtree)
                 
                 if name in time_interval_map:
-                    time = time_interval_map[name]["service_times"][0].end_datetime
-                elif name in activities_time_instances:
-                    last_enabling_token = self.get_last_timed_enabling_token(transition, timed_marking)
-                    if last_enabling_token["delta"] is not None:
-                        time = activities_time_instances[name][0].start_datetime - self.shiftting_amount
-                    else:
-                        time = activities_time_instances[name][0].start_datetime
-                semantics = PetriNetSemantics(model)
+                    time = time_interval_map[name]["service_times"][-1].end_datetime
+                else:
+                    time = semantics.get_time_from_marking(timed_marking)
+                
                 timed_marking = semantics.execute_with_timed_token(transition, timed_marking, time)
 
         return time_interval_map
+    
+    def get_startinh_time_from_next_sync_move(self, border_move, alignments, activities_time_instances):
+        for move in alignments[alignments.index(border_move):]:
+            if move[0][0] != ">>" and move[0][1] != ">>":
+                moves = [m for m in alignments if m[0][1] == move[0][1]]
+                move_index = moves.index(move)
+                return  activities_time_instances[move[1][1]][move_index].start_datetime
 
     def construct_idle_time_ranges(self, time_interval_map, active_subtree):
         if "service_times" in time_interval_map[active_subtree]:
@@ -199,13 +192,11 @@ class TimeRangesConstructionUseCase(object):
             for index, time_range in enumerate(time_interval_map[active_subtree]["service_times"]):
                 size= len(time_interval_map[active_subtree]["service_times"]) - 1
                 if index < size:
-                    idle_times.append(DateTimeRange(time_range.end_datetime, 
-                                                    time_interval_map[active_subtree]["service_times"][index+1].start_datetime))
+                    range = DateTimeRange(time_range.end_datetime, time_interval_map[active_subtree]["service_times"][index+1].start_datetime)
+                    if range not in time_interval_map[active_subtree]["waiting_times"]:
+                        idle_times.append(range)
             
-            if 'idle_times' in  time_interval_map[active_subtree]:
-                time_interval_map[active_subtree]['idle_times'].extend(idle_times)
-            else:
-                time_interval_map[active_subtree]['idle_times'] = idle_times
+            time_interval_map[active_subtree]['idle_times'] = idle_times
 
     def construct_service_time_ranges(self, transition, activities_time_instances, time_interval_map, active_subtrees, timed_marking):
         activity_instances = activities_time_instances[transition.name] if self.is_border(transition) else activities_time_instances[transition.label]
@@ -279,7 +270,7 @@ class TimeRangesConstructionUseCase(object):
                 for intersecting_range in intersection_set:
                     time_interval_map_subtree.remove(intersecting_range)
             else:
-                time_interval_map_subtree.append(time_interval_map_activity[0])
+                time_interval_map_subtree.append(time_range)
         return sorted(time_interval_map_subtree, key= lambda x: x.start_datetime)
 
     def getIntersections(self, time_range, time_interval_map_subtree):
@@ -329,11 +320,15 @@ class TimeRangesConstructionUseCase(object):
         else:
             time_interval_map[activity_label]={'waiting_times': [time_range]}
 
-        for active_subtree in active_subtrees:
-            if 'waiting_times' not in time_interval_map[active_subtree]:
-                time_interval_map[active_subtree]["waiting_times"] = time_interval_map[activity_label]['waiting_times'].copy()
-            elif time_interval_map[activity_label]['waiting_times'][0].end_datetime < time_interval_map[active_subtree]["waiting_times"][0].end_datetime:
-                time_interval_map[active_subtree]["waiting_times"] = time_interval_map[activity_label]['waiting_times'].copy()
+        # for active_subtree in active_subtrees:
+        #     if self.are_related(transition, active_subtree):
+        #         if 'waiting_times' not in time_interval_map[active_subtree]:
+        #             time_interval_map[active_subtree]["waiting_times"] = time_interval_map[activity_label]['waiting_times'].copy()
+        #         elif time_interval_map[activity_label]['waiting_times'].index(time_interval_map[activity_label]['waiting_times'][-1]) > (len(time_interval_map[active_subtree]["waiting_times"])-1): 
+        #             time_interval_map[active_subtree]["waiting_times"].append(time_interval_map[activity_label]['waiting_times'][-1])
+        #         elif time_interval_map[activity_label]['waiting_times'][-1].end_datetime < time_interval_map[active_subtree]["waiting_times"][-1].end_datetime: 
+        #             index =  time_interval_map[active_subtree]["waiting_times"].index(time_interval_map[active_subtree]["waiting_times"][-1])
+        #             time_interval_map[active_subtree]["waiting_times"][index] = time_interval_map[activity_label]['waiting_times'][-1]
                 
     def get_last_timed_enabling_token(self, transition, timed_marking):
         enabling_timed_tokens = []
