@@ -56,7 +56,6 @@ class DecorateExtendedProcessTreeUseCase(object):
             target_nodes = [node for node in nodes if node.get_avg_kpi_value('cycle_times') == value]
             for target_node in target_nodes:
                 colors[target_node.__str__()] = self.convert_rgba_to_hex(color)
-        print(colors)
         return colors
 
     def decorate(self, extended_process_tree):

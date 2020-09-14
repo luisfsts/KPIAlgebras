@@ -23,7 +23,7 @@ class TimeRangesConstructionUseCase(object):
         t1 = time.perf_counter()
         time_interval_map = dict()
         for index, trace in enumerate(log):
-            print(index)
+            # print(index)
             instances = self.get_activities_time_instances(trace, alignment[index], model)
             timed_marking = self.get_timed_marking(initial_marking, trace[0]["time:timestamp"])
             self.construct_ranges(instances, alignment[index], model, timed_marking, time_interval_map)
@@ -41,7 +41,7 @@ class TimeRangesConstructionUseCase(object):
         self.clear_tree_kpis()
         
         for index, trace in enumerate(self.log):
-            print(index)
+            # print(index)
             instances = self.get_activities_time_instances(trace, self.alignments[index], self.model)
             timed_marking = self.get_timed_marking(self.initial_marking, trace[0]["time:timestamp"])
             self.construct_ranges(instances, self.alignments[index], self.model, timed_marking, time_interval_map, node, kpi, delta)

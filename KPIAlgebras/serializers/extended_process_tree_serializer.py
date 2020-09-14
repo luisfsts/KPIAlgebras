@@ -12,8 +12,7 @@ class ExtendedProcessTreeJsonEncoder(json.JSONEncoder):
                                 'nodes':[]}
 
                 for node in nodes:
-                    avg_cycle_time = str(sum([(range.end_datetime - range.start_datetime) for range in node.kpis["cycle_times"]], datetime.timedelta())
-                                        /len(node.kpis["cycle_times"])) if "cycle_times" in node.kpis and node.kpis["cycle_times"] else None
+                    avg_cycle_time = str(node.get_avg_kpi_value("cycle_times")) if "cycle_times" in node.kpis and node.kpis["cycle_times"] else None
                     avg_waiting_time = str(sum([(range.end_datetime - range.start_datetime) for range 
                                             in node.kpis["waiting_times"]], datetime.timedelta())/len(node.kpis["waiting_times"])) if "waiting_times" in node.kpis and node.kpis["waiting_times"] else None
                     avg_service_time = str(sum([(range.end_datetime - range.start_datetime) for range 

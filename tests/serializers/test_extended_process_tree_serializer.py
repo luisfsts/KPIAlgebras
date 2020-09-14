@@ -10,7 +10,7 @@ class TestExtendedProcessTreeSerializer(unittest.TestCase):
     def setUp(self):
         process_tree = process_tree_util.parse("->( 'a' , +( 'b', 'c' ), 'd' )")
         self.extended_process_tree = model.ExtendedProcessTree(process_tree)
-        self.time_ranges = {"->( 'a', +( 'b', 'c' ), 'd' )": {'cycle_times':[DateTimeRange('2019-05-20T01:00:00+0000','2019-05-21T17:06:00+0000')],
+        self.time_ranges = {"->( 'a', +( 'b', 'c' ), 'd' )": {'cycle_times':"1 day, 16:06:00",
                                                                 'waiting_times':[DateTimeRange('2019-05-20T01:00:00+0000', '2019-05-20T01:00:00+0000')],
                                                                 'service_times': [DateTimeRange('2019-05-20T01:00:00+0000','2019-05-20T12:30:00+0000'), 
                                                                                     DateTimeRange('2019-05-20T12:51:00+0000','2019-05-21T14:14:00+0000' ), 
@@ -20,7 +20,7 @@ class TestExtendedProcessTreeSerializer(unittest.TestCase):
                             'a': {'cycle_times': [DateTimeRange('2019-05-20T01:00:00+0000','2019-05-20T12:30:00+0000')],
                                     'waiting_times': [DateTimeRange('2019-05-20T01:00:00+0000','2019-05-20T01:00:00+0000')], 
                                     'service_times': [DateTimeRange('2019-05-20T01:00:00+0000','2019-05-20T12:30:00+0000')]},
-                            "+( 'b', 'c' )": {'cycle_times':[DateTimeRange('2019-05-20T12:30:00+0000','2019-05-21T14:14:00+0000')],
+                            "+( 'b', 'c' )": {'cycle_times':"1 day, 1:44:00",
                                                 'waiting_times':[DateTimeRange('2019-05-20T12:30:00+0000','2019-05-20T12:51:00+0000')],
                                                 'service_times': [DateTimeRange('2019-05-20T12:51:00+0000','2019-05-21T14:14:00+0000')],
                                                 'idle_times': []},
@@ -133,5 +133,4 @@ class TestExtendedProcessTreeSerializer(unittest.TestCase):
 
     def test_serialize_domain_Extended_process_tree(self):
         json_extended_tree = json.dumps(self.extended_process_tree, check_circular=False, cls=encoder.ExtendedProcessTreeJsonEncoder)
-        print (json_extended_tree)
         self.assertDictEqual(json.loads(self.expected_json), json.loads(json_extended_tree))
