@@ -27,6 +27,7 @@ export class KpisComponent implements OnInit {
   hasChildren:boolean = false;
   svgData: any;
   historicSvgData = [];
+  kpis_colors = {}
 
   constructor(private stateService: StateService, private httpClient: HttpClient, private sanitizer: DomSanitizer) {
 
@@ -60,8 +61,39 @@ export class KpisComponent implements OnInit {
           var selectedNodeIndex = this.data.nodes.findIndex(node => node.name === this.selectedNode.name);
           this.selectedNodeOriginalData = this.data.originalState.nodes[selectedNodeIndex]
           console.log(this.selectedNode.kpis)
+          var cycle_times_color = {"color": "black"}
+          var waiting_times_color = {"color": "black"}
+          var service_times_color = {"color": "black"}
+          var idle_times_color = {"color": "black"}
+          if (this.selectedNode.kpis["cycle_time"] <this.selectedNodeOriginalData.kpis["cycle_time"]){
+            cycle_times_color = {"color": "LimeGreen"}
+          } else if (this.selectedNode.kpis["cycle_time"] >this.selectedNodeOriginalData.kpis["cycle_time"]){
+            cycle_times_color = {"color": "red"}
+          }
+          if (this.selectedNode.kpis["waiting_time"] < this.selectedNodeOriginalData.kpis["waiting_time"]){
+            waiting_times_color = {"color": "LimeGreen"}
+          } else if (this.selectedNode.kpis["waiting_time"] >this.selectedNodeOriginalData.kpis["waiting_time"]){
+            waiting_times_color = {"color": "red"}
+          }
+          if (this.selectedNode.kpis["service_time"] < this.selectedNodeOriginalData.kpis["service_time"]){
+            service_times_color = {"color": "LimeGreen"}
+          } else if (this.selectedNode.kpis["service_time"] > this.selectedNodeOriginalData.kpis["service_time"]){
+            service_times_color = {"color": "red"}
+          }
+          if (this.selectedNode.kpis["idle_time"] < this.selectedNodeOriginalData.kpis["idle_time"]){
+            idle_times_color = {"color": "LimeGreen"}
+          } else if (this.selectedNode.kpis["idle_time"] >this.selectedNodeOriginalData.kpis["idle_time"]){
+            idle_times_color = {"color": "red"}
+          }
+          this.kpis_colors = {"cycle_time": cycle_times_color, "waiting_time": waiting_times_color,
+                              "service_time": service_times_color, "idle_time": idle_times_color}
         }
+        console.log(this.kpis_colors)
     }
+  }
+
+  get_color(key){
+    console.log(key)
   }
 
   selectKpiChangeHandler (event: any) {

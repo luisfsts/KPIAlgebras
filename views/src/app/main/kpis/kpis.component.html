@@ -46,7 +46,7 @@
                         <h5>Node KPIs</h5>
                     </div>
                     <div *ngIf="selectedNode"class="card-body">
-                        <div *ngFor="let item of selectedNode.kpis | keyvalue">
+                        <div *ngFor="let item of selectedNode.kpis | keyvalue" [ngStyle]="kpis_colors[item.key]">
                             {{item.key}}:   {{item.value}}
                         </div>
                     </div>
