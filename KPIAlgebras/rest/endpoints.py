@@ -2,7 +2,7 @@ import os
 import json
 import copy
 from flask import Blueprint, request, Response, current_app
-from KPIAlgebras.util import constants, http_response_status_code
+from KPIAlgebras.util import constants, http_response_status_code, util
 from KPIAlgebras.use_cases import import_event_log_use_case as import_log
 from KPIAlgebras.use_cases import model_discovery_use_case as discovery
 from KPIAlgebras.use_cases import alignment_computation_use_case as alignment
@@ -58,6 +58,7 @@ def measurement():
     high_level_use_case = measurement_high_level.CycleTimeAnalysisUseCase()
     high_level_response = high_level_use_case.analyse(log.log, alignments, extended_process_tree, model)
     extended_process_tree = high_level_response.value
+    
     fine_grained_use_case = measurement_fine_grained.TimeRangesConstructionUseCase(log, extended_process_tree, model, initial_marking, final_marking, alignments) 
     response = fine_grained_use_case.construct_time_ranges(log.log, alignments, model, initial_marking, final_marking)
 

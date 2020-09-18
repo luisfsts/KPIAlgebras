@@ -60,7 +60,7 @@ class CycleTimeAnalysisUseCase(object):
                     node.kpis["cycle_times"] = sum([child.get_avg_kpi_value("cycle_times") for child in node.children if "cycle_times" in child.kpis], datetime.timedelta())
                 else:
                     node.kpis["cycle_times"] = max([child.get_avg_kpi_value("cycle_times") for child in node.children if "cycle_times" in child.kpis])
-
+        
     def construct_cycle_time_ranges_for_leafs(self, activity_instances, alignment, process_tree, model):
         for index, move in enumerate(alignment["alignment"]):
             if self.is_model_or_sync_move(move):

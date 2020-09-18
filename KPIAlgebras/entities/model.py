@@ -92,13 +92,18 @@ class PetriNetSemantics(object):
         enabling_tokens = []
         
         for arc in transition.in_arcs:
-            enabling_tokens.append(resulting_marking[arc.source])
-            del resulting_marking[arc.source]
+            enabling_tokens.append(resulting_marking[str(arc.source)])
+            del resulting_marking[str(arc.source)]
         
         for arc in transition.out_arcs:
             last_executed_token = max(enabling_tokens, key=(lambda token: token["time"]))
-            resulting_marking[arc.target] = {'time': time_stamp, 'delta': last_executed_token["delta"]}
+            resulting_marking[str(arc.target)] = {'id': str(arc.target),
+                                            'time': time_stamp, 
+                                            'delta': last_executed_token["delta"], 
+                                            'shifting_amount': last_executed_token["shifting_amount"] 
+                                                               if "shifting_amount" in last_executed_token else []}
         return resulting_marking
     
     def get_time_from_marking(self, marking):
+        # TODO not true, need to ched on the inputs not all places
         return max([place["time"] for place in marking.values()])
