@@ -12,11 +12,13 @@ from KPIAlgebras.use_cases import decorate_extended_process_tree_use_case as dec
 from KPIAlgebras.serializers import extended_process_tree_serializer as serializer
 from KPIAlgebras.request_objects import request_objects 
 from pm4py.objects.conversion.process_tree.converter import to_petri_net_transition_bordered as converter
+from pm4py.objects.process_tree.importer import importer as ptml_importer
 from pm4py.objects.process_tree import util as process_tree_util
 from KPIAlgebras.entities import model as model_object
 from KPIAlgebras.entities import data
 from pm4py.visualization.common.utils import get_base64_from_gviz
 from KPIAlgebras.response_objects import response_objects
+from pm4py.algo.filtering.log.attributes import attributes_filter
 import time
 
 blueprint = Blueprint('endpoints', __name__)
@@ -32,20 +34,20 @@ def measurement():
     print("Begining the fine grained analysis")
     t1 = time.perf_counter()
     parameters =  dict()
-    file = request.files['eventLog']
-    file.save(os.path.join(constants.upload_folder, file.filename))
+    log_file = request.files['eventLog']
+    log_file.save(os.path.join(constants.upload_folder, log_file.filename))
+
+    model_file = request.files['model']
+    model_file.save(os.path.join(constants.upload_folder, model_file.filename))
     
     import_log_use_case = import_log.ImportEventLogUseCase()
-    request_object = request_objects.TimeRangeConstructionRequestObject.from_dict({'event_log': file.filename})
+    request_object = request_objects.TimeRangeConstructionRequestObject.from_dict({'event_log': log_file.filename})
     global log
     log = data.EventLog(import_log_use_case.import_event_log_from_xes(request_object))
-    os.remove(os.path.join(constants.upload_folder, file.filename))
+    os.remove(os.path.join(constants.upload_folder, log_file.filename))
 
-    # discovery_use_case = discovery.ModelDiscoveryUseCase()
-    # extended_process_tree = discovery_use_case.discover(log)
-    process_tree = process_tree_util.parse("->( 'a' , +( 'b', 'c' ), 'd' )")
-    # process_tree = process_tree_util.parse("->('start', +('a', ->('b', 'c', 'd')), 'end')")
-    # process_tree = process_tree_util.parse("->('Create Fine', X(tau, ->('Send Fine', 'Insert Fine Notification')), +(X(tau, 'Add penalty'), X(tau, 'Payment')), X(tau, 'Send for Credit Collection'))")
+    process_tree = ptml_importer.apply(os.path.join(constants.upload_folder, model_file.filename))
+    os.remove(os.path.join(constants.upload_folder, model_file.filename))
     global extended_process_tree
     extended_process_tree = model_object.ExtendedProcessTree(process_tree)
     global model, initial_marking, final_marking
@@ -56,11 +58,13 @@ def measurement():
     alignments = alignment_use_case.compute(model, initial_marking, final_marking, log)
 
     high_level_use_case = measurement_high_level.CycleTimeAnalysisUseCase()
-    high_level_response = high_level_use_case.analyse(log.log, alignments, extended_process_tree, model)
-    extended_process_tree = high_level_response.value
+    response = high_level_use_case.analyse(log.log, alignments, extended_process_tree, model)
+    extended_process_tree = response.value
     
-    fine_grained_use_case = measurement_fine_grained.TimeRangesConstructionUseCase(log, extended_process_tree, model, initial_marking, final_marking, alignments) 
-    response = fine_grained_use_case.construct_time_ranges(log.log, alignments, model, initial_marking, final_marking)
+    lifecycle = attributes_filter.get_attribute_values(log.log, "lifecycle:transition")
+    if lifecycle is not None and 'start' in lifecycle:
+        fine_grained_use_case = measurement_fine_grained.TimeRangesConstructionUseCase(log, extended_process_tree, model, initial_marking, final_marking, alignments) 
+        response = fine_grained_use_case.construct_time_ranges(log.log, alignments, model, initial_marking, final_marking)
 
     decoration_use_case = decorate_tree.DecorateExtendedProcessTreeUseCase()
     gviz = decoration_use_case.decorate(extended_process_tree)

@@ -19,6 +19,7 @@ class TimeRangesConstructionUseCase(object):
         self.shiftting_amount = timedelta()
         self.target_node = None
         self.extended_process_tree = extended_process_tree
+        self.processed = []
         
     def construct_time_ranges(self, log, alignment, model, initial_marking, final_marking):
         print("Begining the fine grained analysis")
@@ -31,6 +32,7 @@ class TimeRangesConstructionUseCase(object):
             self.construct_ranges(instances, alignment[index], model, timed_marking, time_interval_map)
             self.update_extended_tree(time_interval_map)
             time_interval_map.clear()
+            self.processed.clear()
         t2 = time.perf_counter()
         print(t2-t1)
         return response.ResponseSuccess(self.extended_process_tree)
@@ -44,6 +46,7 @@ class TimeRangesConstructionUseCase(object):
         
         for index, trace in enumerate(self.log):
             # print(index)
+            # print(index)
             instances = self.get_activities_time_instances(trace, self.alignments[index], self.model)
             timed_marking = self.get_timed_marking(self.initial_marking, trace[0]["time:timestamp"])
             self.construct_ranges(instances, self.alignments[index], self.model, timed_marking, time_interval_map, node, kpi, delta)
@@ -51,7 +54,7 @@ class TimeRangesConstructionUseCase(object):
             self.update_leaf_cycle_times(self.extended_process_tree, time_interval_map)
             # self.print_operators_cycle_times(self.extended_process_tree)
             time_interval_map.clear()
-        
+            self.processed.clear()
         self.update_operators_cycle_times(self.extended_process_tree)
         return response.ResponseSuccess(self.extended_process_tree)
 
@@ -137,8 +140,10 @@ class TimeRangesConstructionUseCase(object):
         self.target_node = node
         semantics = PetriNetSemantics(model)
 
-        for move in alignment["alignment"]:
+        for aln_index, move in enumerate(alignment["alignment"]):
             if self.is_model_or_sync_move(move):
+                moves = [m for m in alignment["alignment"] if m[0][1] == move[0][1]]
+                move_index = moves.index(move)
                 transition = self.get_transition_from_move(move, model.transitions)
                 name = transition.name if self.is_border(transition) else transition.label
                 time = None
@@ -147,10 +152,10 @@ class TimeRangesConstructionUseCase(object):
                     last_enabling_token = self.get_last_timed_enabling_token(transition, timed_marking)
                     if kpi == "waiting_time":
                         start = self.get_enabling_time_from_timed_marking(timed_marking, transition)
-                        end = activities_time_instances[name][0].start_datetime
+                        end = activities_time_instances[name][move_index].start_datetime
                     else:
-                        start = activities_time_instances[name][0].start_datetime
-                        end = activities_time_instances[name][0].end_datetime
+                        start = activities_time_instances[name][move_index].start_datetime
+                        end = activities_time_instances[name][move_index].end_datetime
                         
                     duration = end - start 
                     if last_enabling_token["delta"]:
@@ -158,6 +163,7 @@ class TimeRangesConstructionUseCase(object):
                     else:
                         last_enabling_token["delta"]= [delta]
                     last_enabling_token["kpi"] = kpi
+                    # print(timedelta(seconds = duration.total_seconds() * delta))
                     if last_enabling_token["shifting_amount"]:
                         last_enabling_token["shifting_amount"].append(timedelta(seconds = duration.total_seconds() * delta))
                     else:
@@ -168,7 +174,7 @@ class TimeRangesConstructionUseCase(object):
                 if self.is_border(transition) and self.is_start(transition):
                     active_subtrees.append(border_transitions_map[transition.name])
                     start = semantics.get_time_from_marking(timed_marking)
-                    end = self.get_startinh_time_from_next_sync_move(move, alignment["alignment"], activities_time_instances)
+                    end = self.get_startinh_time_from_next_sync_move(move, alignment["alignment"], activities_time_instances, aln_index)
                     last_enabling_token = self.get_last_timed_enabling_token(transition, timed_marking)
                     if last_enabling_token["delta"]:
                         for index, delta in enumerate(last_enabling_token["delta"]):
@@ -180,9 +186,10 @@ class TimeRangesConstructionUseCase(object):
                         time_interval_map[border_transitions_map[transition.name]]["waiting_times"].append(DateTimeRange(start, end))
                 
                 if not self.is_border(transition) and transition.label is not None:
-                    self.construct_waiting_time_ranges(transition, activities_time_instances, timed_marking, time_interval_map, active_subtrees)
-                    self.construct_service_time_ranges(transition, activities_time_instances, time_interval_map, active_subtrees, timed_marking)
-                    activities_time_instances[name].remove(activities_time_instances[name][0])
+                    self.construct_waiting_time_ranges(transition, activities_time_instances, timed_marking, time_interval_map, active_subtrees, move_index)
+                    self.construct_service_time_ranges(transition, activities_time_instances, time_interval_map, active_subtrees, timed_marking, move_index)
+                    # activities_time_instances[name].remove(activities_time_instances[name][0])
+                    self.processed.append(name)
                 
                 if self.is_border(transition) and self.is_end(transition):
                     active_subtree = active_subtrees.pop(active_subtrees.index(border_transitions_map[transition.name]))
@@ -194,15 +201,22 @@ class TimeRangesConstructionUseCase(object):
                     time = semantics.get_time_from_marking(timed_marking)
                 
                 timed_marking = semantics.execute_with_timed_token(transition, timed_marking, time)
+                
         # print(str(time_interval_map["d"]["waiting_times"][0].end_datetime - time_interval_map["d"]["waiting_times"][0].start_datetime))
+        # print(alignment["alignment"])
+        # print(time_interval_map["b"])
+        # print(time_interval_map["c"])
+        # print(time_interval_map["->( 'a', +( 'b', 'c' ), 'd' )"])
         return time_interval_map
     
-    def get_startinh_time_from_next_sync_move(self, border_move, alignments, activities_time_instances):
-        for move in alignments[alignments.index(border_move):]:
+    def get_startinh_time_from_next_sync_move(self, border_move, alignments, activities_time_instances, index):
+        times = []
+        for move in alignments[index:]:
             if move[0][0] != ">>" and move[0][1] != ">>":
                 moves = [m for m in alignments if m[0][1] == move[0][1]]
                 move_index = moves.index(move)
-                return  activities_time_instances[move[1][1]][move_index].start_datetime
+                times.append(activities_time_instances[move[1][1]][move_index].start_datetime)
+        return  min(times)
 
     def construct_idle_time_ranges(self, time_interval_map, active_subtree):
         if "service_times" in time_interval_map[active_subtree]:
@@ -216,12 +230,12 @@ class TimeRangesConstructionUseCase(object):
             
             time_interval_map[active_subtree]['idle_times'] = idle_times
 
-    def construct_service_time_ranges(self, transition, activities_time_instances, time_interval_map, active_subtrees, timed_marking):
+    def construct_service_time_ranges(self, transition, activities_time_instances, time_interval_map, active_subtrees, timed_marking, index):
         activity_instances = activities_time_instances[transition.name] if self.is_border(transition) else activities_time_instances[transition.label]
         activity_name = transition.name if self.is_border(transition) else transition.label
         activity_label = self.get_subtree_name_from_border_transition(transition) if self.is_border(transition) else transition.label
-        start = activities_time_instances[activity_name][0].start_datetime
-        end = activities_time_instances[activity_name][0].end_datetime
+        start = activities_time_instances[activity_name][index].start_datetime
+        end = activities_time_instances[activity_name][index].end_datetime
         last_enabling_token =  self.get_last_timed_enabling_token(transition, timed_marking)
 
         if transition.label == self.target_node:
@@ -239,7 +253,14 @@ class TimeRangesConstructionUseCase(object):
             for index, delta in enumerate(last_enabling_token["delta"]):
                 start = start - last_enabling_token["shifting_amount"][index]
                 end = end - last_enabling_token["shifting_amount"][index]
-        
+        if self.processed:
+            enabler = self.get_enabling_time_preceding_moves(transition, activities_time_instances, index)
+            enabler_time = self.get_enabling_time_from_timed_marking(timed_marking, transition)
+            if enabler_time > time_interval_map[enabler.label]["service_times"][-1].end_datetime:
+                normal_end = activities_time_instances[activity_name][index].end_datetime
+                normal_start = activities_time_instances[activity_name][index].start_datetime
+                start =  enabler_time + (time_interval_map[activity_name]["waiting_times"][index].end_datetime - time_interval_map[activity_name]["waiting_times"][index].start_datetime)
+                end = start + (normal_end - normal_start)
         time_range = DateTimeRange(start, end)
         
         for state in self.extended_process_tree.states:
@@ -323,24 +344,29 @@ class TimeRangesConstructionUseCase(object):
 
         return merged_intervals
 
-    def construct_waiting_time_ranges(self, transition, activities_time_instances, timed_marking, time_interval_map, active_subtrees):
+    def construct_waiting_time_ranges(self, transition, activities_time_instances, timed_marking, time_interval_map, active_subtrees, index):
         activity_instances = activities_time_instances[transition.name] if self.is_border(transition) else activities_time_instances[transition.label]
         start = self.get_enabling_time_from_timed_marking(timed_marking, transition)
         activity_name = transition.name if self.is_border(transition) else transition.label
         activity_label = self.get_subtree_name_from_border_transition(transition) if self.is_border(transition) else transition.label
-        end = activities_time_instances[activity_name][0].start_datetime
+        end = activities_time_instances[activity_name][index].start_datetime
         last_enabling_token =  self.get_last_timed_enabling_token(transition, timed_marking)
 
         if transition.label == self.target_node:
-            if last_enabling_token["kpi"] == "waiting_time":
-                end = end - last_enabling_token["shifting_amount"][-1]
             if last_enabling_token["delta"]:
                 for index, delta in enumerate(last_enabling_token["delta"][:-1]):
                     end = end - last_enabling_token["shifting_amount"][index]
+            if last_enabling_token["kpi"] == "waiting_time":
+                end = end - last_enabling_token["shifting_amount"][-1]
         elif last_enabling_token["delta"]:
             for index, delta in enumerate(last_enabling_token["delta"]):
                 end = end - last_enabling_token["shifting_amount"][index]
-        
+        if self.processed:
+            enabler = self.get_enabling_time_preceding_moves(transition, activities_time_instances, index)
+            if start > time_interval_map[enabler.label]["service_times"][-1].end_datetime:
+                enabler_time = activities_time_instances[enabler.label][index].end_datetime
+                normal_start = activities_time_instances[activity_name][index].start_datetime
+                end = start + (normal_start - enabler_time)
         time_range = DateTimeRange(start, end)
 
         for state in self.extended_process_tree.states:
@@ -367,16 +393,6 @@ class TimeRangesConstructionUseCase(object):
         else:
             time_interval_map[activity_label]={'waiting_times': [time_range]}
 
-        # for active_subtree in active_subtrees:
-        #     if self.are_related(transition, active_subtree):
-        #         if 'waiting_times' not in time_interval_map[active_subtree]:
-        #             time_interval_map[active_subtree]["waiting_times"] = time_interval_map[activity_label]['waiting_times'].copy()
-        #         elif time_interval_map[activity_label]['waiting_times'].index(time_interval_map[activity_label]['waiting_times'][-1]) > (len(time_interval_map[active_subtree]["waiting_times"])-1): 
-        #             time_interval_map[active_subtree]["waiting_times"].append(time_interval_map[activity_label]['waiting_times'][-1])
-        #         elif time_interval_map[activity_label]['waiting_times'][-1].end_datetime < time_interval_map[active_subtree]["waiting_times"][-1].end_datetime: 
-        #             index =  time_interval_map[active_subtree]["waiting_times"].index(time_interval_map[active_subtree]["waiting_times"][-1])
-        #             time_interval_map[active_subtree]["waiting_times"][index] = time_interval_map[activity_label]['waiting_times'][-1]
-                
     def get_last_timed_enabling_token(self, transition, timed_marking):
         enabling_timed_tokens = []
         for arc in transition.in_arcs:
@@ -424,11 +440,23 @@ class TimeRangesConstructionUseCase(object):
     def get_transition_from_move(self, move, transitions):
         return [transition for transition in transitions if transition.name == move[0][1]][0]
 
- 
+    def get_enabling_time_preceding_moves(self, transition, activity_instances, index):
+        input_places = [arc.source for arc in transition.in_arcs]
+        enablers = [arc.source for place in input_places for arc in place.in_arcs]
+        visible_enablers = []
+        if enablers:
+            for enabler in enablers:
+                if enabler.label is not None and enabler.label in activity_instances:
+                    visible_enablers.append(enabler)
+                else: 
+                    visible_enablers.append(self.get_enabling_time_preceding_moves(enabler, activity_instances, index))
+        # visible_enablers = [enabler if enabler.label is not None and enabler.label in activity_instances else 
+        #                    self.get_enabling_time_preceding_moves(enabler, activity_instances) for enabler in enablers]
+        visible_enablers = [enabler for enabler in visible_enablers if enabler is not None and enabler.label in self.processed]                
+        return max(visible_enablers,  key= lambda enabler: self.get_time_from_data(enabler, activity_instances, index).end_datetime) if visible_enablers else None
 
-   
-
-    
+    def get_time_from_data(self, transition, activity_instances, index):
+        return activity_instances[transition.label][index] if len(activity_instances[transition.label])> 1 else activity_instances[transition.label][0]
     
    
     

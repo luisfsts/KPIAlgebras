@@ -12,21 +12,20 @@ class ExtendedProcessTreeJsonEncoder(json.JSONEncoder):
                                 'nodes':[]}
 
                 for node in nodes:
-                    print(node.__str__())
-                    avg_cycle_time = str(node.get_avg_kpi_value("cycle_times")) if "cycle_times" in node.kpis and node.kpis["cycle_times"] else None
-                    avg_waiting_time = str(sum([(range.end_datetime - range.start_datetime) for range 
-                                            in node.kpis["waiting_times"]], datetime.timedelta())/len(node.kpis["waiting_times"])) if "waiting_times" in node.kpis and node.kpis["waiting_times"] else None
-                    avg_service_time = str(sum([(range.end_datetime - range.start_datetime) for range 
-                                                in node.kpis["service_times"]], datetime.timedelta())/(len(node.kpis["waiting_times"]) 
-                                                if node.children else len(node.kpis["service_times"]))) if "service_times" in node.kpis and node.kpis["service_times"] else None
-                    avg_idle_time =  str(sum([(range.end_datetime - range.start_datetime) for range 
-                                        in node.kpis["idle_times"]], datetime.timedelta())/len(node.kpis["waiting_times"])) if "idle_times" in node.kpis and node.kpis["idle_times"] else "0:00:00"
+                    avg_cycle_time = node.get_avg_kpi_value("cycle_times") 
+                    avg_waiting_time = node.get_avg_kpi_value("waiting_times") 
+                    avg_service_time =  node.get_avg_kpi_value("service_times") 
+                    avg_idle_time =  node.get_avg_kpi_value("idle_times") 
                     to_serialize["nodes"].append({'name': node.__str__(),
                                                 'operator': node.operator.name if node.operator is not None else None,
-                                                'kpis':{'cycle_time': avg_cycle_time,
-                                                        'waiting_time': avg_waiting_time,
-                                                        'service_time': avg_service_time,
-                                                        'idle_time':avg_idle_time},
+                                                'kpis':{'Sojourn time': {'repr': str(avg_cycle_time) if avg_cycle_time is not None else None, 
+                                                                        'duration': avg_cycle_time.total_seconds() if avg_cycle_time is not None else None},
+                                                        'Waiting time': {'repr': str(avg_waiting_time) if avg_cycle_time is not None else None, 
+                                                                        'duration': avg_waiting_time.total_seconds()if avg_waiting_time is not None else None},
+                                                        'Service time': {'repr': str(avg_service_time) if avg_cycle_time is not None else None, 
+                                                                        'duration': avg_service_time.total_seconds()if avg_service_time is not None else None},
+                                                        'Idle time':{'repr': str(avg_idle_time) if avg_cycle_time is not None else None, 
+                                                                    'duration': avg_idle_time.total_seconds() if avg_idle_time is not None else None}},
                                                 'children':[children.__str__() for children in node.children]})
                 to_serialize['originalState'] = self.default(obj.states[0]) if obj.states else copy.deepcopy(to_serialize)
                 return to_serialize

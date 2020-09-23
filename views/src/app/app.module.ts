@@ -13,7 +13,6 @@ import { KpisComponent } from './main/kpis/kpis.component';
 import { ShowTabDirective } from './main/kpis/show-tab/show-tab.directive';
 import { ProcessModelComponent } from './main/process-model/process-model.component';
 import { FormsModule,ReactiveFormsModule } from '@angular/forms';
-import { ProcessmodelComponent } from './main/processmodel/processmodel.component';
 
 const appRoutes: Routes = [
   {path: '',redirectTo: 'main',pathMatch: 'full'},
@@ -35,7 +34,6 @@ const appRoutes: Routes = [
     KpisComponent,
     ShowTabDirective,
     ProcessModelComponent,
-    ProcessmodelComponent,
   ],
   imports: [
     BrowserModule, 

@@ -54,13 +54,9 @@ class ExtendedProcessTree(ProcessTree):
         yield from nodes[::-1]
     
     def get_avg_kpi_value(self, kpi):
-        if kpi in self.__kpis:
-            if self.children and kpi == 'cycle_times':
-                return self.__kpis[kpi]
-            return sum([(range.end_datetime - range.start_datetime) for range in self.__kpis[kpi]], datetime.timedelta())/len(self.__kpis[kpi])
-        t = datetime.datetime.strptime("00:00:00", "%H:%M:%S")
-        result = datetime.timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
-        return result
+        if kpi in self.__kpis and self.__kpis[kpi]:
+            return sum([(range.end_datetime - range.start_datetime) for range in self.__kpis[kpi]], datetime.timedelta())/len(self.__kpis["waiting_times"])
+        return None
 
 class PetriNet(PetriNet):
     def __init__(self, petri_net):

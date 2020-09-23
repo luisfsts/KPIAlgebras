@@ -20,10 +20,10 @@
                         </select>
                         <input  *ngIf="selectedKpi" [(ngModel)]= "delta" type="text" class="form-control" id="delta" placeholder="Decreasing amount(%)">
                     </div>
-                    <select *ngIf="selectedNode && hasChildren" class="custom-select" id="inputGroupSelect01" (change)="selectOperatorChangeHandler($event)">
+                    <!-- <select *ngIf="selectedNode && hasChildren" class="custom-select" id="inputGroupSelect01" (change)="selectOperatorChangeHandler($event)">
                         <option>Choose...</option>
                         <option *ngFor="let item of data.operators">{{item}}</option>
-                    </select>
+                    </select> -->
                     <div *ngIf="selectedOperator && selectedOperator == 'X'">
                         <div *ngFor="let item of selectedNode.children">
                             <input type="text" class="form-control" [id]=item placeholder="Routing probabilities">
@@ -47,7 +47,7 @@
                     </div>
                     <div *ngIf="selectedNode"class="card-body">
                         <div *ngFor="let item of selectedNode.kpis | keyvalue" [ngStyle]="kpis_colors[item.key]">
-                            {{item.key}}:   {{item.value}}
+                            <span *ngIf="item.value != null">{{item.key}}:   {{item.value.repr}}</span>
                         </div>
                     </div>
                 </div>
@@ -57,7 +57,7 @@
                     </div>
                     <div *ngIf="selectedNodeOriginalData"class="card-body">
                         <div *ngFor="let item of selectedNodeOriginalData.kpis | keyvalue">
-                            {{item.key}}:   {{item.value}}
+                            <span *ngIf="item.value != null">{{item.key}}:   {{item.value.repr}}</span>
                         </div>
                     </div>
                 </div>

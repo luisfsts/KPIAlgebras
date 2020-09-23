@@ -65,28 +65,28 @@ export class KpisComponent implements OnInit {
           var waiting_times_color = {"color": "black"}
           var service_times_color = {"color": "black"}
           var idle_times_color = {"color": "black"}
-          if (this.selectedNode.kpis["cycle_time"] <this.selectedNodeOriginalData.kpis["cycle_time"]){
+          if (this.selectedNode.kpis["Sojourn time"]["duration"]  <this.selectedNodeOriginalData.kpis["Sojourn time"]["duration"]){
             cycle_times_color = {"color": "LimeGreen"}
-          } else if (this.selectedNode.kpis["cycle_time"] >this.selectedNodeOriginalData.kpis["cycle_time"]){
+          } else if (this.selectedNode.kpis["Sojourn time"]["duration"]  >this.selectedNodeOriginalData.kpis["Sojourn time"]["duration"]){
             cycle_times_color = {"color": "red"}
           }
-          if (this.selectedNode.kpis["waiting_time"] < this.selectedNodeOriginalData.kpis["waiting_time"]){
+          if (this.selectedNode.kpis["Waiting time"]["duration"] < this.selectedNodeOriginalData.kpis["Waiting time"]["duration"]){
             waiting_times_color = {"color": "LimeGreen"}
-          } else if (this.selectedNode.kpis["waiting_time"] >this.selectedNodeOriginalData.kpis["waiting_time"]){
+          } else if (this.selectedNode.kpis["Waiting time"]["duration"] >this.selectedNodeOriginalData.kpis["Waiting time"]["duration"]){
             waiting_times_color = {"color": "red"}
           }
-          if (this.selectedNode.kpis["service_time"] < this.selectedNodeOriginalData.kpis["service_time"]){
+          if (this.selectedNode.kpis["Service time"]["duration"] < this.selectedNodeOriginalData.kpis["Service time"]["duration"]){
             service_times_color = {"color": "LimeGreen"}
-          } else if (this.selectedNode.kpis["service_time"] > this.selectedNodeOriginalData.kpis["service_time"]){
+          } else if (this.selectedNode.kpis["Service time"]["duration"] > this.selectedNodeOriginalData.kpis["Service time"]["duration"]){
             service_times_color = {"color": "red"}
           }
-          if (this.selectedNode.kpis["idle_time"] < this.selectedNodeOriginalData.kpis["idle_time"]){
+          if (this.selectedNode.kpis["Idle time"]["duration"] < this.selectedNodeOriginalData.kpis["Idle time"]["duration"]){
             idle_times_color = {"color": "LimeGreen"}
-          } else if (this.selectedNode.kpis["idle_time"] >this.selectedNodeOriginalData.kpis["idle_time"]){
+          } else if (this.selectedNode.kpis["Idle time"]["duration"] >this.selectedNodeOriginalData.kpis["Idle time"]["duration"]){
             idle_times_color = {"color": "red"}
           }
-          this.kpis_colors = {"cycle_time": cycle_times_color, "waiting_time": waiting_times_color,
-                              "service_time": service_times_color, "idle_time": idle_times_color}
+          this.kpis_colors = {"Sojourn time": cycle_times_color, "Waiting time": waiting_times_color,
+                              "Service time": service_times_color, "Idle time": idle_times_color}
         }
         console.log(this.kpis_colors)
     }

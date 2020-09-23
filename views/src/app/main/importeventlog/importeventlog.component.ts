@@ -11,11 +11,15 @@ import {StateService} from '../../services/state.service'
 })
 export class ImporteventlogComponent{
 
-  @ViewChild('labelImport',{static: false})
-  labelImport: ElementRef;
+  @ViewChild('loglabelImport',{static: false})
+  loglabelImport: ElementRef;
+
+  @ViewChild('modellabelImport',{static: false})
+  modellabelImport: ElementRef;
 
   formImport: FormGroup;
-  fileToUpload: File = null;
+  logfileToUpload: File = null;
+  modelfileToUpload: File = null;
   serverData: JSON;
 
   constructor(private stateService: StateService,private httpClient: HttpClient, private router: Router) {
@@ -25,16 +29,24 @@ export class ImporteventlogComponent{
 
   }
 
-  onFileChange(files: FileList) {
-    this.labelImport.nativeElement.innerText = Array.from(files)
+  onLogFileChange(files: FileList) {
+    this.loglabelImport.nativeElement.innerText = Array.from(files)
       .map(f => f.name)
       .join(', ');
-    this.fileToUpload = files.item(0);
+    this.logfileToUpload = files.item(0);
+  }
+
+  onModelFileChange(files: FileList) {
+    this.modellabelImport.nativeElement.innerText = Array.from(files)
+      .map(f => f.name)
+      .join(', ');
+    this.modelfileToUpload = files.item(0);
   }
 
   import(): void {
     const uploadData = new FormData();
-    uploadData.append('eventLog', this.fileToUpload, this.fileToUpload.name)
+    uploadData.append('eventLog', this.logfileToUpload, this.logfileToUpload.name)
+    uploadData.append('model', this.modelfileToUpload, this.modelfileToUpload.name)
     this.httpClient.post('http://127.0.0.1:5002/measurement', uploadData).subscribe(
       (data: any) =>{
         this.stateService.data = data;

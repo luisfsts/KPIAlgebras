@@ -1,14 +1,20 @@
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h3">Import Event Log</h1>
+    <h1 class="h3">Import Event Log and Process Model</h1>
 </div>
 <form novalidate>
     <div class="input-group mb-3 import">
         <div class="custom-file">
-            <input type="file" class="custom-file-input" multiple formControlName="importFile" id="importFile" (change)="onFileChange($event.target.files)" >
-            <label class="custom-file-label" #labelImport for="importFile" aria-describedby="inputGroupFileAddon02">Choose file</label>
+            <input type="file" class="custom-file-input" multiple formControlName="importFile" id="importFile" (change)="onLogFileChange($event.target.files)" >
+            <label class="custom-file-label" #loglabelImport for="importFile" aria-describedby="inputGroupFileAddon02">Choose Event Log</label>
         </div>
-        <div class="input-group-append">
-            <button class="btn btn-outline-secondary" id="inputGroupFileAddon02" type="button" (click)="import()">Upload</button>
+    </div>
+    <div class="input-group mb-3 import">
+        <div class="custom-file">
+            <input type="file" class="custom-file-input" multiple formControlName="importFile" id="importModel" (change)="onModelFileChange($event.target.files)" >
+            <label class="custom-file-label" #modellabelImport for="importModel" aria-describedby="inputGroupFileAddon02">Choose Process Model</label>
         </div>
+    </div>
+    <div class="input-group-append">
+        <button class="btn btn-outline-secondary" id="inputGroupFileAddon02" type="button" (click)="import()">Upload</button>
     </div>
 </form>
