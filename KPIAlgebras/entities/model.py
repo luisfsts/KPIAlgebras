@@ -55,7 +55,7 @@ class ExtendedProcessTree(ProcessTree):
     
     def get_avg_kpi_value(self, kpi):
         if kpi in self.__kpis and self.__kpis[kpi]:
-            return sum([(range.end_datetime - range.start_datetime) for range in self.__kpis[kpi]], datetime.timedelta())/len(self.__kpis["waiting_times"])
+            return sum([(range.end_datetime - range.start_datetime) for range in self.__kpis[kpi]], datetime.timedelta())/len(self.__kpis["cycle_times"]) 
         return None
 
 class PetriNet(PetriNet):

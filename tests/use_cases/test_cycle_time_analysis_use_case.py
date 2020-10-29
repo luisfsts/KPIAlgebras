@@ -35,9 +35,9 @@ class TestCycleTimeAnalysisUseCase(unittest.TestCase):
                            'visited_states': 11, 
                            'queued_states': 30, 
                            'traversed_arcs': 30}]
-        self.time_ranges = {"->( 'a', +( 'b', 'c' ), 'd' )": {'cycle_times':timedelta(1, 57960)}, 
+        self.time_ranges = {"->( 'a', +( 'b', 'c' ), 'd' )": {'cycle_times':[DateTimeRange('2019-05-20T01:00:00+0000', '2019-05-21T17:06:00+0000')]}, 
                             'a': {'cycle_times': [DateTimeRange('2019-05-20T01:00:00+0000','2019-05-20T12:30:00+0000')]},
-                            "+( 'b', 'c' )": {'cycle_times': timedelta(1, 6240)},
+                            "+( 'b', 'c' )": {'cycle_times': [DateTimeRange('2019-05-20T12:30:00+0000','2019-05-21T14:14:00+0000')]},
                             'c':{'cycle_times': [DateTimeRange('2019-05-20T12:30:00+0000','2019-05-20T15:55:00+0000')]},
                             'b':{'cycle_times': [DateTimeRange('2019-05-20T12:30:00+0000','2019-05-21T14:14:00+0000')]},      
                             'd':{'cycle_times': [DateTimeRange('2019-05-21T14:14:00+0000','2019-05-21T17:06:00+0000')]}}

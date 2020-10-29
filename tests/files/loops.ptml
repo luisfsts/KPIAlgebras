@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<ptml>
+<processTree id="f5bf835e-b1b4-4f88-bcf0-3a74317b06d6" name="f5bf835e-b1b4-4f88-bcf0-3a74317b06d6" root="b58de0ee-8de9-403b-b933-ad99bc0e587a">
+<manualTask id="e38da541-370a-4d99-a311-14164f896b0e" name="b"/>
+<sequence id="b58de0ee-8de9-403b-b933-ad99bc0e587a" name=""/>
+<automaticTask id="91864314-ca51-4f75-b30d-0528f50ef190" name="tau"/>
+<manualTask id="b5b35276-1827-4aba-aa9f-7022455f9d7b" name="c"/>
+<sequence id="96ea4e93-729e-474a-8e49-58e8ef906ba9" name=""/>
+<manualTask id="32b675a3-3978-401c-b09d-ffd1df790f1e" name="a"/>
+<automaticTask id="76f90be9-8824-4eeb-a086-93f28ac47f96" name="tau"/>
+<xorLoop id="491aebee-9976-40af-ad24-2a5bdca05889" name=""/>
+<manualTask id="567268bd-670a-413f-a1cc-537fe5a83d23" name="d"/>
+<parentsNode id="5bbd0392-9d9f-46f1-bf5d-9ba2aec69be5" sourceId="b58de0ee-8de9-403b-b933-ad99bc0e587a" targetId="32b675a3-3978-401c-b09d-ffd1df790f1e"/>
+<parentsNode id="c5e65457-0000-4bdb-8c2d-72dd32b7f26f" sourceId="b58de0ee-8de9-403b-b933-ad99bc0e587a" targetId="491aebee-9976-40af-ad24-2a5bdca05889"/>
+<parentsNode id="4efb8e9b-8a14-499d-a22a-a554e75a9880" sourceId="b58de0ee-8de9-403b-b933-ad99bc0e587a" targetId="e38da541-370a-4d99-a311-14164f896b0e"/>
+<parentsNode id="2b6c3acb-c65d-47cd-a2a4-ca5b9b0e7d26" sourceId="96ea4e93-729e-474a-8e49-58e8ef906ba9" targetId="b5b35276-1827-4aba-aa9f-7022455f9d7b"/>
+<parentsNode id="7ae71f73-9e47-4519-ad57-736173e1d3a5" sourceId="96ea4e93-729e-474a-8e49-58e8ef906ba9" targetId="567268bd-670a-413f-a1cc-537fe5a83d23"/>
+<parentsNode id="bf70b86f-573d-49bb-af7a-a3f705eec60b" sourceId="491aebee-9976-40af-ad24-2a5bdca05889" targetId="96ea4e93-729e-474a-8e49-58e8ef906ba9"/>
+<parentsNode id="ed110e93-0416-4ee9-b7b0-a13ab7ac9fec" sourceId="491aebee-9976-40af-ad24-2a5bdca05889" targetId="76f90be9-8824-4eeb-a086-93f28ac47f96"/>
+<parentsNode id="ae178c10-7dd8-48eb-a44a-0ef3a7b06fc6" sourceId="491aebee-9976-40af-ad24-2a5bdca05889" targetId="91864314-ca51-4f75-b30d-0528f50ef190"/>
+</processTree>
+</ptml>

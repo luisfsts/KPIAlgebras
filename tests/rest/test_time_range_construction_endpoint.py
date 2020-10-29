@@ -11,9 +11,11 @@ from datetimerange import DateTimeRange
 
 class TestTimeRangeConstructionEndpoint(unittest.TestCase):
     def setUp(self):
-        file_name = "partially_ordered_test_log.xes"
-        path = os.path.join('/GitHub/KPIAlgebras/tests/files', file_name)
-        self.event_log = data.EventLog(xesimporter.import_log(path))
+        log_file_name = "partially_ordered_test_log.xes"
+        log_path = os.path.join('/GitHub/KPIAlgebras/tests/files', log_file_name)
+        model_file_name = "running-example.ptml"
+        model_path = os.path.join('/GitHub/KPIAlgebras/tests/files', model_file_name)
+        self.event_log = data.EventLog(xesimporter.import_log(log_path))
         self.log = self.event_log
         process_tree = process_tree_util.parse("->( 'a' , +( 'b', 'c' ), 'd' )")
         self.extended_process_tree = model.ExtendedProcessTree(process_tree)
@@ -62,8 +64,9 @@ class TestTimeRangeConstructionEndpoint(unittest.TestCase):
         endpoints.initial_marking = self.initial_marking
         endpoints.final_marking = self.final_marking
         endpoints.extended_process_tree = self.extended_process_tree
-        self.file = open(path, 'rb')
-        self.data = {'eventLog': (self.file, file_name)}
+        self.log_file = open(log_path, 'rb')
+        self.model_file = open(model_path,'rb')
+        self.data = {'eventLog': (self.log_file, log_file_name), 'model': (self.model_file, model_file_name)}
         self.app =  app.create_app().test_client()
         self.app.testing = True
         
@@ -72,8 +75,7 @@ class TestTimeRangeConstructionEndpoint(unittest.TestCase):
         self.assertTrue(bool(http_response))
         self.assertEquals(http_response.status_code, 200)
         self.assertEquals(http_response.mimetype, 'application/json')
-    
-    def test_time_shifting_endpoint(self):
         http_response = self.app.post('/timeshifting?target_node=b&delta=0.2&kpi=service_time')
         self.assertEquals(http_response.status_code, 200)
         self.assertEquals(http_response.mimetype, 'application/json')
+    

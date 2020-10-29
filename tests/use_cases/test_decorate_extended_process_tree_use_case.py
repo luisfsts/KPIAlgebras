@@ -17,7 +17,7 @@ class TestDecorateExtendedProcessTreeUseCase(unittest.TestCase):
         process_tree = process_tree_util.parse("->( 'a' , +( 'b', 'c' ), 'd' )")
         self.extended_process_tree = model.ExtendedProcessTree(process_tree)
         self.model, self.initial_marking, self.final_marking = converter.apply(self.extended_process_tree)
-        self.time_ranges = {"->( 'a', +( 'b', 'c' ), 'd' )": {'cycle_times':timedelta(1, 57960),
+        self.time_ranges = {"->( 'a', +( 'b', 'c' ), 'd' )": {'cycle_times':[DateTimeRange('2019-05-20T01:00:00+0000', '2019-05-21T17:06:00+0000')],
 														'waiting_times':[DateTimeRange('2019-05-20T01:00:00+0000', '2019-05-20T01:00:00+0000')],
                                                                 'service_times': [DateTimeRange('2019-05-20T01:00:00+0000','2019-05-20T12:30:00+0000'), 
                                                                                     DateTimeRange('2019-05-20T12:51:00+0000','2019-05-21T14:14:00+0000' ), 
@@ -27,7 +27,7 @@ class TestDecorateExtendedProcessTreeUseCase(unittest.TestCase):
                             'a': {'cycle_times':[DateTimeRange('2019-05-20T01:00:00+0000', '2019-05-20T12:30:00+0000')],
 								'waiting_times': [DateTimeRange('2019-05-20T01:00:00+0000','2019-05-20T01:00:00+0000')], 
                                     'service_times': [DateTimeRange('2019-05-20T01:00:00+0000','2019-05-20T12:30:00+0000')]},
-                            "+( 'b', 'c' )": {'cycle_times':timedelta(1, 6240),
+                            "+( 'b', 'c' )": {'cycle_times':[DateTimeRange('2019-05-20T12:30:00+0000','2019-05-21T14:14:00+0000')],
 												'waiting_times':[DateTimeRange('2019-05-20T12:30:00+0000','2019-05-20T12:51:00+0000')],
                                                 'service_times': [DateTimeRange('2019-05-20T12:51:00+0000','2019-05-21T14:14:00+0000')],
                                                 'idle_times': []},
