@@ -37,7 +37,7 @@ export class KpisComponent implements OnInit {
     this.originalTreeData = this.stateService.data;
     this.data = this.stateService.data;
     this.operators = this.data.operators;
-    this.kpis = ["service_time", "waiting_time"]
+    this.kpis = ["service_time", "waiting_time", "sojourn_time"]
     this.svgData = this.sanitizer.bypassSecurityTrustUrl("data:image/svg+xml;base64," + this.data.svg)
     console.log(this.svgData)
   }

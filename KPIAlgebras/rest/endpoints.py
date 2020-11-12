@@ -92,7 +92,8 @@ def timeshifting():
     request_object = request_objects.TimeShiftingRequestObject.from_dict(parameters)
 
     global log, model, initial_marking, final_marking, extended_process_tree, alignments
-    extended_process_tree.states.append(copy.deepcopy(extended_process_tree))        
+    extended_process_tree.states.append(copy.deepcopy(extended_process_tree))  
+    
     fine_grained_use_case = measurement_fine_grained.TimeRangesConstructionUseCase(log.log, extended_process_tree, model, initial_marking, final_marking, alignments) 
     response =  fine_grained_use_case.shift_time_ranges(request_object)
 

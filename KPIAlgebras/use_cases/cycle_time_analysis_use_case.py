@@ -4,6 +4,7 @@ from pm4py.objects.process_tree import pt_operator
 import datetime
 import time
 from pm4py.algo.filtering.log.variants import variants_filter
+from copy import copy, deepcopy
 
 class CycleTimeAnalysisUseCase(object):
     def analyse(self, log, alignments, process_tree, model):
@@ -15,30 +16,38 @@ class CycleTimeAnalysisUseCase(object):
         current_trace_variant = None
 
         for alignment_index, alignment in enumerate(alignments):
-            
             for variant in variants:
                 if log[alignment_index] in variants[variant]:
                     current_trace_variant = variant
                     break
-            transition_map = self.get_transition_map(model, alignment["alignment"])
-            self.update_enablers_map(current_trace_variant, alignment["alignment"], transition_map)
+            if current_trace_variant not in self.enablers_map:    
+                transition_map = self.get_transition_map(model, alignment["alignment"])
+                self.update_enablers_map(current_trace_variant, alignment["alignment"], transition_map)
             instances = self.get_activities_time_instances(log[alignment_index], alignment, model)
             self.construct_cycle_time_ranges(instances, alignment, time_interval_map, model, current_trace_variant)
             self.construct_cycle_time_ranges_for_Operators(process_tree, time_interval_map)
-            self.update_extended_tree(time_interval_map, process_tree)
+            self.update_extended_tree(time_interval_map, process_tree, instances)
             time_interval_map.clear()
         t2 = time.perf_counter()
         print(t2-t1)
         return response.ResponseSuccess(process_tree)
 
-    def update_extended_tree(self, time_interval_map, process_tree):
+    def update_extended_tree(self, time_interval_map, process_tree, instances):
         nodes = process_tree.get_nodes_bottom_up()
         for node in [n for n in nodes if n.__str__() in time_interval_map and n.__str__() != "τ"]:
-            for kpi in time_interval_map[node.__str__()]:
-                if kpi in node.kpis:
-                    node.kpis[kpi].extend(time_interval_map[node.__str__()][kpi])
-                else:
-                    node.kpis[kpi] = time_interval_map[node.__str__()][kpi]
+            if not node.children:
+                if node.__str__() in instances:
+                    for kpi in time_interval_map[node.__str__()]:
+                        if kpi in node.kpis:
+                            node.kpis[kpi].extend(time_interval_map[node.__str__()][kpi])
+                        else:
+                            node.kpis[kpi] = time_interval_map[node.__str__()][kpi]
+            else:
+                for kpi in time_interval_map[node.__str__()]:
+                        if kpi in node.kpis:
+                            node.kpis[kpi].extend(time_interval_map[node.__str__()][kpi])
+                        else:
+                            node.kpis[kpi] = time_interval_map[node.__str__()][kpi]
 
     def get_activities_time_instances(self, trace, alignment, model):
         open_instances = []
@@ -82,18 +91,38 @@ class CycleTimeAnalysisUseCase(object):
         number_of_executions = None
         
         for node in process_tree.get_nodes_bottom_up():
-            
             if node.children:
-                
                 if node.operator != pt_operator.Operator.XOR:
-                    number_of_executions = len(time_interval_map[node.children[0].__str__()]['cycle_times']) 
+                    executions = [len(time_interval_map[child.__str__()]["cycle_times"]) for child in node.children if child.__str__() in time_interval_map]
+                    number_of_executions = executions[0]
                 else:
-                    number_of_executions = sum([len(time_interval_map[child.__str__()]['cycle_times']) for child in node.children if child.__str__() in time_interval_map])
+                    number_of_executions = len([time_interval_map[child.__str__()]["cycle_times"] for child in node.children if child.__str__() in time_interval_map]) 
                 
                 for child in node.children:
                     processed_children[child.__str__()] = False
                 
-                if node.operator != pt_operator.Operator.PARALLEL:
+                if node.operator == pt_operator.Operator.XOR:
+                    time_ranges = []
+                    for child in node.children:
+                        if child.__str__() in time_interval_map:
+                            if node.__str__() in time_interval_map:
+                                time_interval_map[node.__str__()]['cycle_times'].extend(deepcopy(time_interval_map[child.__str__()]['cycle_times']))
+                            else:
+                                time_interval_map[node.__str__()]={'cycle_times': deepcopy(time_interval_map[child.__str__()]['cycle_times'])}
+                    if node.__str__() in time_interval_map:
+                        time_interval_map[node.__str__()]['cycle_times'] =  sorted(time_interval_map[node.__str__()]['cycle_times'], key = lambda range: range.start_datetime)
+               
+                elif node.operator == pt_operator.Operator.PARALLEL:
+                    for index in range(0, number_of_executions):
+                        if node.__str__() in time_interval_map:
+                            time_interval_map[node.__str__()]["cycle_times"].append(max([time_interval_map[child.__str__()]["cycle_times"][index] 
+                                                                                        for child in node.children if child.__str__() in time_interval_map], 
+                                                                                        key = lambda range: (range.end_datetime - range.start_datetime)))
+                        else:
+                            time_interval_map[node.__str__()]={'cycle_times': [max([time_interval_map[child.__str__()]["cycle_times"][index] 
+                                                                                        for child in node.children if child.__str__() in time_interval_map], 
+                                                                                        key =  lambda range: (range.end_datetime - range.start_datetime))]}
+                else:
                     ranges = []
                     for index in range(0, number_of_executions):
                         for child in node.children:
@@ -108,24 +137,14 @@ class CycleTimeAnalysisUseCase(object):
                                 time_interval_map[node.__str__()]['cycle_times'].extend([DateTimeRange(start, end)])
                             else:
                                 time_interval_map[node.__str__()]={'cycle_times': [DateTimeRange(start, end)]}
-                         
-                else:
-                    for index in range(0, number_of_executions):
-                        if node.__str__() in time_interval_map:
-                            time_interval_map[node.__str__()]["cycle_times"].append(max([time_interval_map[child.__str__()]["cycle_times"][index] 
-                                                                                        for child in node.children if child.__str__() in time_interval_map], 
-                                                                                        key = lambda range: (range.end_datetime - range.start_datetime)))
-                        else:
-                            time_interval_map[node.__str__()]={'cycle_times': [max([time_interval_map[child.__str__()]["cycle_times"][index] 
-                                                                                        for child in node.children if child.__str__() in time_interval_map], 
-                                                                                        key =  lambda range: (range.end_datetime - range.start_datetime))]}
-                    
+                            ranges = []
+                   
     
     def construct_cycle_time_ranges_for_leafs(self, activity_instances, alignment, time_interval_map, model, current_trace_variant):
         for index, move in enumerate(alignment["alignment"]):
             if self.is_model_or_sync_move(move):
                 transition = self.get_transition_from_move(move, model.transitions)
-                if not self.is_border(transition) and transition.label is not None and transition.label in activity_instances:
+                if not self.is_border(transition) and transition.label is not None:
                     #TODO include preceding_moves to deal with loops
                     # preceding_moves = alignment["alignment"][:index]
                     self.construct_ranges(transition, time_interval_map, activity_instances, move, current_trace_variant)
@@ -135,9 +154,14 @@ class CycleTimeAnalysisUseCase(object):
         executions = 0
         if transition.label in time_interval_map:
             executions = len(time_interval_map[transition.label]['cycle_times'])
-        start = self.get_time_from_data(enabler, activity_instances, len(time_interval_map[enabler]["cycle_times"]) - 1).end_datetime if enabler is not None else activity_instances[transition.label][0].start_datetime
-        end = activity_instances[transition.label][executions].end_datetime
+        start = self.get_time_from_data(enabler, activity_instances, len(time_interval_map[enabler]["cycle_times"]) - 1, time_interval_map).end_datetime if enabler is not None else activity_instances[transition.label][0].start_datetime
         
+        end = None
+        if transition.label in activity_instances:
+            end = activity_instances[transition.label][executions].end_datetime
+        else:
+            end = start
+            
         if transition.label in time_interval_map:
             time_interval_map[transition.label]['cycle_times'].append(DateTimeRange(start, end))
         else:
@@ -174,29 +198,38 @@ class CycleTimeAnalysisUseCase(object):
     def update_enablers_map(self, variant, alignment, transition_map):
         for index, move in enumerate(alignment):
             if self.is_model_or_sync_move(move):
-                enabler = self.get_visible_enabler(alignment[:index], move, transition_map)
-                if variant in self.enablers_map:
-                    if move[0][1] in self.enablers_map[variant]:
-                        self.enablers_map[variant][move[0][1]].append(enabler if enabler is not None else None)
+                enablers = self.get_visible_enabler(alignment[:index], move, transition_map, variant)
+                if enablers is not None:
+                    if variant in self.enablers_map:
+                        if move[0][1] in self.enablers_map[variant]:
+                            included = set(self.enablers_map[variant][move[0][1]])
+                            candidates = set(enablers)
+                            self.enablers_map[variant][move[0][1]].extend(list(candidates-included))
+                        else:
+                            self.enablers_map[variant][move[0][1]] = enablers
                     else:
-                        self.enablers_map[variant][move[0][1]] = [enabler if enabler is not None else None]
-                else:
-                    self.enablers_map[variant] = {transition_map[move].name: [enabler if enabler is not None else None]}
+                        self.enablers_map[variant] = {transition_map[move].name: enablers}
 
-    def get_visible_enabler(self, alignment, move, transition_map):
+    def get_visible_enabler(self, alignment, move, transition_map, variant):
         transition = transition_map[move]
         input_places = [arc.source for arc in transition.in_arcs]
         enabler_candidates = [arc.source.name for place in input_places for arc in place.in_arcs]
         enablers = []
         i =  len(alignment) - 1
         while i > 0:
+            if len(enablers) >= len(enabler_candidates):
+                return enablers
             if alignment[i][0][1] in enabler_candidates:
                 if alignment[i][1][1] is not None:
-                    return alignment[i][1][1]
+                    if alignment[i][1][1] not in enablers:
+                        enablers.append(alignment[i][1][1]) 
                 else:
-                    return self.get_visible_enabler(alignment[:i], alignment[i], transition_map)
+                    if alignment[i][0][1] in self.enablers_map[variant]:
+                        enablers.extend(self.enablers_map[variant][alignment[i][0][1]])
+                    else:
+                        enablers.extend(self.get_visible_enabler(alignment[:i], alignment[i], transition_map, variant))
             i -= 1
-        return None
+        return enablers
 
     def get_enabling_time_preceding_moves(self, activity_instances, move, current_trace_variant, time_interval_map):
         enablers = []
@@ -204,11 +237,15 @@ class CycleTimeAnalysisUseCase(object):
             if enabler is not None and enabler in time_interval_map:
                 enablers.append(enabler)
         if enablers:
-            return max(enablers, key = lambda enabler: self.get_time_from_data(enabler, activity_instances, len(time_interval_map[enabler]['cycle_times'])-1).end_datetime)
+            return max(enablers, key = lambda enabler: self.get_time_from_data(enabler, activity_instances, len(time_interval_map[enabler]['cycle_times'])-1, time_interval_map).end_datetime)
         return None
 
-    def get_time_from_data(self, transition, activity_instances, index):
-        return activity_instances[transition][index]
+    def get_time_from_data(self, transition, activity_instances, index, time_interval_map):
+        if transition in activity_instances:
+            return activity_instances[transition][index]
+        else:
+            if "cycle_times" in time_interval_map[transition]:
+                return time_interval_map[transition]["cycle_times"][index]
 
     # def get_enabling_time_preceding_moves(self, transition, activity_instances):
     #     input_places = [arc.source for arc in transition.in_arcs]

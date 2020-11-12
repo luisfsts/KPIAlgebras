@@ -47,7 +47,7 @@ class DecorateExtendedProcessTreeUseCase(object):
         colors = dict()
         nodes = [node for node in extended_process_tree.get_nodes_bottom_up() if 'cycle_times' in node.kpis and node.__str__() != 'τ']
         values = [node.get_avg_kpi_value('cycle_times') for node in sorted(nodes, key=lambda node: node.get_avg_kpi_value('cycle_times'),reverse=True)]
-        color_map =  pylab.get_cmap('RdYlBu')
+        color_map =  pylab.get_cmap('autumn')
         
         for index, value in enumerate(values):
             nodes = extended_process_tree.get_nodes_bottom_up()
