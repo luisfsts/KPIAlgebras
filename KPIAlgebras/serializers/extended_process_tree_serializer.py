@@ -17,8 +17,20 @@ class ExtendedProcessTreeJsonEncoder(json.JSONEncoder):
                     avg_service_time =  node.get_avg_kpi_value("service_times") 
                     avg_idle_time =  node.get_avg_kpi_value("idle_times") 
                     
-                    if node.parent is None:
+                    print(node.__str__())
+                    # if avg_idle_time is not None:
+                    #     print(avg_idle_time.total_seconds())
+                    # if avg_service_time is not None:
+                    #     print(avg_service_time.total_seconds())
+                    # if node.parent is not None:
+                    #     print(avg_service_time.total_seconds())
+                    # else:
+                    if avg_cycle_time is not None:
                         print(avg_cycle_time.total_seconds())
+                    # if avg_waiting_time is not None:
+                    #     print(avg_waiting_time.total_seconds())
+                    
+                   
 
                     to_serialize["nodes"].append({'name': node.__str__(),
                                                 'operator': node.operator.name if node.operator is not None else None,

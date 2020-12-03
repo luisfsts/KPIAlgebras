@@ -60,6 +60,11 @@ export class KpisComponent implements OnInit {
           this.selectedNode = node
           var selectedNodeIndex = this.data.nodes.findIndex(node => node.name === this.selectedNode.name);
           this.selectedNodeOriginalData = this.data.originalState.nodes[selectedNodeIndex]
+          if (this.selectedNode.kpis["Service time"]["duration"] == null){
+            this.kpis = ["sojourn_time"]
+          } else{
+            this.kpis = ["service_time", "waiting_time"]
+          }
           console.log(this.selectedNode.kpis)
           var cycle_times_color = {"color": "black"}
           var waiting_times_color = {"color": "black"}

@@ -200,7 +200,7 @@ class TestTimeRangeConstructionUseCase(unittest.TestCase):
                                   'service_times': [DateTimeRange('1970-01-01T03:38:12+01:00','1970-01-01T03:46:48+01:00')]}}
         
     def test_time_range_construction(self):
-          use_case = measurement.TimeRangesConstructionUseCase(self.log, self.extended_process_tree, self.model, self.initial_marking, self.final_marking, self.alignments) 
+            use_case = measurement.TimeRangesConstructionUseCase(self.log, self.extended_process_tree, self.model, self.initial_marking, self.final_marking, self.alignments) 
       #   response = use_case.construct_time_ranges(self.log,
       #                                               self.alignments, 
       #                                               self.model, 
@@ -208,7 +208,7 @@ class TestTimeRangeConstructionUseCase(unittest.TestCase):
       #                                               self.final_marking)
       #   for node in response.value.get_nodes_bottom_up():
       #       self.assertDictEqual(self.time_ranges[node.__str__()], node.kpis)
-      self.assertEqual('test','test')
+            self.assertEqual('test','test')
     
     def test_time_range_construction_with_loops(self):
       #   use_case = measurement.TimeRangesConstructionUseCase(self.log_with_loops, self.extended_process_tree_with_loops, 

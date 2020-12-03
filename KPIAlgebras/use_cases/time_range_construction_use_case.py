@@ -29,16 +29,16 @@ class TimeRangesConstructionUseCase(object):
         time_interval_map = dict()
         variants = variants_filter.get_variants(log)
         current_trace_variant = None
+
+        for variant in variants:
+            self.update_enablers_map(self.model.transitions, variant)
         
         for index, trace in enumerate(log):
-            instances = self.get_activities_time_instances(trace, alignment[index], model)
             for variant in variants:
                 if trace in variants[variant]:
                     current_trace_variant = variant
                     break
-            if current_trace_variant not in self.enablers_map:
-                transition_map = self.get_transition_map(model, alignment[index]['alignment'])
-                self.update_enablers_map(current_trace_variant, alignment[index]['alignment'], transition_map)
+            instances = self.get_activities_time_instances(trace, alignment[index], model)
             timed_marking = self.get_timed_marking(initial_marking, trace[0]["time:timestamp"])
             self.construct_ranges(instances, alignment[index], model, timed_marking, time_interval_map, None, None, None, current_trace_variant)
             self.update_extended_tree(time_interval_map, instances)
@@ -53,45 +53,28 @@ class TimeRangesConstructionUseCase(object):
         transition_map = dict()
         for move in alignment:
             if self.is_model_or_sync_move(move):
-                transition_map[move] = self.get_transition_from_move(move, model.transitions)
+                transition_map[move[0][1]] = self.get_transition_from_move(move, model.transitions)
         return transition_map
        
-    def update_enablers_map(self, variant, alignment, transition_map):
-        for index, move in enumerate(alignment):
-            if self.is_model_or_sync_move(move):
-                enablers = self.get_visible_enabler(alignment[:index], move, transition_map, variant)
-                if enablers is not None:
-                    if variant in self.enablers_map:
-                        if move[0][1] in self.enablers_map[variant]:
-                            included = set(self.enablers_map[variant][move[0][1]])
-                            candidates = set(enablers)
-                            self.enablers_map[variant][move[0][1]].extend(list(candidates-included))
-                        else:
-                            self.enablers_map[variant][move[0][1]] = enablers
-                    else:
-                        self.enablers_map[variant] = {transition_map[move].name: enablers}
-
-    def get_visible_enabler(self, alignment, move, transition_map, variant):
-        transition = transition_map[move]
+    def update_enablers_map(self, transitions,variant):
+        self.enablers_map[variant] = dict()
+        for transition in transitions:
+            self.enablers_map[variant][transition.name] = self.get_visible_enablers(transitions,transition,variant)
+        
+    def get_visible_enablers(self, transitions, transition, variant):
         input_places = [arc.source for arc in transition.in_arcs]
-        enabler_candidates = [arc.source.name for place in input_places for arc in place.in_arcs]
+        enabler_candidates = [arc.source for place in input_places for arc in place.in_arcs]
         enablers = []
-        i =  len(alignment) - 1
-        while i > 0:
-            if len(enablers) >= len(enabler_candidates):
-                return enablers
-            if alignment[i][0][1] in enabler_candidates:
-                if alignment[i][1][1] is not None:
-                    if alignment[i][1][1] not in enablers:
-                        enablers.append(alignment[i][1][1]) 
+        for transition in enabler_candidates:
+            if transition.label is not None:
+                if transition.label not in enablers:
+                    enablers.append(transition.label) 
+            else:
+                if transition.name in self.enablers_map[variant]:
+                    enablers.extend(self.enablers_map[variant][transition.name])
                 else:
-                    if alignment[i][0][1] in self.enablers_map[variant]:
-                        enablers.extend(self.enablers_map[variant][alignment[i][0][1]])
-                    else:
-                        enablers.extend(self.get_visible_enabler(alignment[:i], alignment[i], transition_map, variant))
-            i -= 1
+                    enablers.extend(self.get_visible_enablers(transitions, transition, variant))
         return enablers
-            
 
     def shift_time_ranges(self, request_object):
         node = request_object.parameters['target_node']
@@ -102,14 +85,14 @@ class TimeRangesConstructionUseCase(object):
         variants = variants_filter.get_variants(self.log)
         current_trace_variant = None
         
+        for variant in variants:
+            self.update_enablers_map(self.model.transitions, variant)
+       
         for index, trace in enumerate(self.log):
             for variant in variants:
                 if trace in variants[variant]:
                     current_trace_variant = variant
                     break
-            if current_trace_variant not in self.enablers_map:
-                transition_map = self.get_transition_map(self.model, self.alignments[index]['alignment'])
-                self.update_enablers_map(current_trace_variant, self.alignments[index]['alignment'], transition_map)
             instances = self.get_activities_time_instances(trace, self.alignments[index], self.model)
             timed_marking = self.get_timed_marking(self.initial_marking, trace[0]["time:timestamp"])
             if node in instances:
@@ -177,7 +160,7 @@ class TimeRangesConstructionUseCase(object):
             if node.children:
                 if node.operator != pt_operator.Operator.XOR:
                     executions = [len(time_interval_map[child.__str__()]["cycle_times"]) for child in node.children if child.__str__() in time_interval_map]
-                    number_of_executions = executions[0]
+                    number_of_executions = executions[0] if executions else 0
                 else:
                     number_of_executions = len([time_interval_map[child.__str__()]["cycle_times"] for child in node.children if child.__str__() in time_interval_map]) 
                 
@@ -198,7 +181,7 @@ class TimeRangesConstructionUseCase(object):
                     if node.__str__() in time_interval_map:
                         time_interval_map[node.__str__()]["cycle_times"] =  sorted(time_interval_map[node.__str__()]["cycle_times"], key = lambda range: range.start_datetime)
                
-                elif node.operator == pt_operator.Operator.PARALLEL:
+                elif node.operator == pt_operator.Operator.PARALLEL and number_of_executions > 0:
                     for index in range(0, number_of_executions):
                         if node.__str__() in time_interval_map:
                             if "cycle_times" in time_interval_map[node.__str__()]:
@@ -213,7 +196,7 @@ class TimeRangesConstructionUseCase(object):
                             time_interval_map[node.__str__()] = {"cycle_times" :[max([time_interval_map[child.__str__()]["cycle_times"][index] 
                                                                                             for child in node.children if child.__str__() in time_interval_map], 
                                                                                             key =  lambda range: (range.end_datetime - range.start_datetime))]}
-                else:
+                elif number_of_executions > 0:
                     ranges = []
                     for index in range(0, number_of_executions):
                         for child in node.children:
@@ -247,17 +230,20 @@ class TimeRangesConstructionUseCase(object):
                 time_range = DateTimeRange()
                 time_range.set_start_datetime(event["time:timestamp"])
                 open_instances.append(event["concept:name"])
-                if event["concept:name"] not in instances:
-                    instances[event["concept:name"]] = [time_range]
-                else:
+                if event["concept:name"] in instances:
                     instances[event["concept:name"]].append(time_range)
+                else:
+                    instances[event["concept:name"]] = [time_range]
             elif event["lifecycle:transition"] == "complete":
                 if event["concept:name"] in open_instances:
                     open_instances.remove(event["concept:name"])
                     open_instance = next(instance for instance in instances[event["concept:name"]] if instance.end_datetime is None)
                     open_instance.set_end_datetime(event["time:timestamp"])
                 else:
-                    instances[event["concept:name"]]= [DateTimeRange(event["time:timestamp"], event["time:timestamp"])]
+                    if event["concept:name"] not in instances:
+                        instances[event["concept:name"]]= [DateTimeRange(event["time:timestamp"], event["time:timestamp"])]
+                    else:
+                        instances[event["concept:name"]].append(DateTimeRange(event["time:timestamp"], event["time:timestamp"]))
         return instances
     
     def get_move_name(self, move):
@@ -321,7 +307,7 @@ class TimeRangesConstructionUseCase(object):
                 if self.is_border(transition) and self.is_start(transition):
                     if kpi != "sojourn_time":
                         active_subtrees.append(border_transitions_map[transition.name])
-                        start = semantics.get_time_from_marking(timed_marking)
+                        start = semantics.get_time_from_marking(timed_marking,transition)
                         if border_transitions_map[transition.name] not in time_interval_map:
                             time_interval_map[border_transitions_map[transition.name]] = {"waiting_times": [DateTimeRange(start, None)]}
                         else:
@@ -363,9 +349,17 @@ class TimeRangesConstructionUseCase(object):
                     else:
                         time = time_interval_map[name]["cycle_times"][-1].end_datetime 
                 else:
-                    time = semantics.get_time_from_marking(timed_marking)
+                    time = semantics.get_time_from_marking(timed_marking, transition)
                 
                 timed_marking = semantics.execute_with_timed_token(transition, timed_marking, time)
+        
+        # if "b" in time_interval_map:
+        #     print(time_interval_map["b"])
+        # if "c" in time_interval_map:
+        # print("d")
+        # print(time_interval_map["d"])    
+        # print("e")
+
         return time_interval_map
     
     def get_startinh_time_from_next_sync_move(self, border_move, alignments, activities_time_instances, index):
@@ -419,7 +413,7 @@ class TimeRangesConstructionUseCase(object):
             enabler_time = self.get_enabling_time_from_timed_marking(timed_marking, transition)
             if enabler_time > time_interval_map[enabler]["cycle_times"][-1].end_datetime:
                 normal_end = activities_time_instances[activity_name][move_index].end_datetime
-                normal_start = activities_time_instances[activity_name][enabler].end_datetime
+                normal_start = activities_time_instances[enabler][move_index].end_datetime
                 start =  enabler_time 
                 end = start + (normal_end - normal_start)
                 if last_enabling_token["shifting_amount"]: 
@@ -588,7 +582,7 @@ class TimeRangesConstructionUseCase(object):
                 end = end - last_enabling_token["shifting_amount"][-1]
                 for parent in [subtree for subtree in active_subtrees if self.are_related(transition, subtree)]:
                     parent_waiting_end_time = time_interval_map[parent]["waiting_times"][-1].end_datetime
-                    if parent_waiting_end_time is not None and end < parent_waiting_end_time and index <= len(time_interval_map[parent]["waiting_times"]) - 1:
+                    if parent_waiting_end_time is not None and end < parent_waiting_end_time:
                        time_interval_map[parent]["waiting_times"][-1].set_end_datetime(end)
         elif last_enabling_token["shifting_amount"]:
             for delta_index, delta in enumerate(last_enabling_token["shifting_amount"]):
@@ -681,6 +675,10 @@ class TimeRangesConstructionUseCase(object):
         for enabler in self.enablers_map[current_trace_variant][move[0][1]]:
             if enabler is not None and enabler in time_interval_map:
                 enablers.append(enabler)
+        
+        # if transition.label is not None and index > 0:
+        #     enablers.append(transition.label)
+
         if enablers:
             if "cycle_times" in time_interval_map[enablers[0]]:
                 return max(enablers, key = lambda enabler: self.get_time_from_data(enabler, activity_instances, len(time_interval_map[enabler]['cycle_times'])-1, time_interval_map).end_datetime)

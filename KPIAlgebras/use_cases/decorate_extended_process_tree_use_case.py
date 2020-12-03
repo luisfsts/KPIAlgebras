@@ -14,8 +14,10 @@ class DecorateExtendedProcessTreeUseCase(object):
                 this_trans_id = str(uuid.uuid4())
                 if child.label is None:
                     viz.node(this_trans_id, "tau", style='filled', fillcolor='black')
-                else:
+                elif child.__str__() in colors:
                     viz.node(this_trans_id, str(child), style='filled', fillcolor=colors[child.__str__()])
+                else:
+                    viz.node(this_trans_id, str(child), style='filled', fillcolor='transparent')
                 viz.edge(current_node, this_trans_id)
             else:
                 condition_wo_operator = child.operator == pt_operator.Operator.XOR and len(
@@ -27,14 +29,19 @@ class DecorateExtendedProcessTreeUseCase(object):
                     this_trans_id = str(uuid.uuid4())
                     if childchild.label is None:
                         viz.node(this_trans_id, str(childchild), style='filled', fillcolor='black')
+                    elif child.__str__() in colors:
+                        viz.node(this_trans_id, str(childchild), style='filled', fillcolor=colors[childchild.__str__()])
                     else:
-                        viz.node(this_trans_id, str(childchild), style='filled', fillcolor=colors[child.__str__()])
+                        viz.node(this_trans_id, str(childchild), style='filled', fillcolor='transparent')
                     viz.edge(current_node, this_trans_id)
                 else:
                     viz.attr('node', shape='circle', fixedsize='true', width="0.6",
                             fontsize="14")
                     op_node_identifier = str(uuid.uuid4())
-                    viz.node(op_node_identifier, str(child.operator), style='filled', fillcolor=colors[child.__str__()])
+                    if child.__str__() in colors:
+                        viz.node(op_node_identifier, str(child.operator), style='filled', fillcolor=colors[child.__str__()])
+                    else:
+                        viz.node(op_node_identifier, str(child.operator), style='filled', fillcolor='transparent')
                     viz.edge(current_node, op_node_identifier)
                     viz = self.repr_tree(child, viz, op_node_identifier, rec_depth + 1, colors)
         return viz
@@ -68,8 +75,10 @@ class DecorateExtendedProcessTreeUseCase(object):
             viz.attr('node', shape='circle', fixedsize='true', width="0.6",
                     fontsize="14")
             op_node_identifier = str(uuid.uuid4())
-            viz.node(op_node_identifier, str(extended_process_tree.operator), style='filled', fillcolor=colors[extended_process_tree.__str__()])
-
+            if extended_process_tree.__str__() in colors:
+                viz.node(op_node_identifier, str(extended_process_tree.operator), style='filled', fillcolor=colors[extended_process_tree.__str__()])
+            else:
+                viz.node(op_node_identifier, str(extended_process_tree.operator), style='filled', fillcolor=colors[extended_process_tree.__str__()])
             viz = self.repr_tree(extended_process_tree, viz, op_node_identifier, 0, colors)
         else:
             viz.attr('node', shape='box', fixedsize='true', width="2.5",
@@ -77,8 +86,10 @@ class DecorateExtendedProcessTreeUseCase(object):
             this_trans_id = str(uuid.uuid4())
             if extended_process_tree.label is None:
                 viz.node(this_trans_id, "tau", style='filled', fillcolor='black')
+            elif extended_process_tree.__str__()  in colors:
+                viz.node(op_node_identifier, str(extended_process_tree.operator), style='filled', fillcolor=colors[extended_process_tree.__str__()])
             else:
-                viz.node(this_trans_id, str(extended_process_tree), style='filled',  fillcolor=colors[extended_process_tree.__str__()])
+                viz.node(op_node_identifier, str(extended_process_tree.operator), style='filled', fillcolor='transparent')
 
         viz.attr(overlap='false')
         viz.attr(fontsize='11')

@@ -100,6 +100,9 @@ class PetriNetSemantics(object):
                                                                if "shifting_amount" in last_executed_token else []}
         return resulting_marking
     
-    def get_time_from_marking(self, marking):
-        # TODO not true, need to ched on the inputs not all places
-        return max([place["time"] for place in marking.values()])
+    def get_time_from_marking(self, marking, transition):
+        enabling_tokens = []
+        for arc in transition.in_arcs:
+            enabling_tokens.append(marking[str(arc.source)])
+            
+        return max([token["time"] for token in enabling_tokens])
