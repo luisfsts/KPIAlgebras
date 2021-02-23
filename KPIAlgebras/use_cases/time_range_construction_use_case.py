@@ -24,8 +24,6 @@ class TimeRangesConstructionUseCase(object):
         self.enablers_map = dict()
         
     def construct_time_ranges(self, log, alignment, model, initial_marking, final_marking):
-        print("Begining the fine grained analysis")
-        t1 = time.perf_counter()
         time_interval_map = dict()
         variants = variants_filter.get_variants(log)
         current_trace_variant = None
@@ -45,8 +43,6 @@ class TimeRangesConstructionUseCase(object):
             time_interval_map.clear()
             self.processed.clear()
         
-        t2 = time.perf_counter()
-        print(t2-t1)
         return response.ResponseSuccess(self.extended_process_tree)
     
     def get_transition_map(self, model, alignment):

@@ -8,8 +8,8 @@ from copy import copy, deepcopy
 
 class CycleTimeAnalysisUseCase(object):
     def analyse(self, log, alignments, process_tree, model):
-        print("Begining the Cycle time analysis")
-        t1 = time.perf_counter()
+        # print("Begining the Cycle time analysis")
+        # t1 = time.perf_counter()
         time_interval_map = dict()
         self.enablers_map = dict()
         variants = variants_filter.get_variants(log)
@@ -26,12 +26,10 @@ class CycleTimeAnalysisUseCase(object):
             instances = self.get_activities_time_instances(log[alignment_index], alignment, model)
             self.construct_cycle_time_ranges(instances, alignment, time_interval_map, model, current_trace_variant)
             self.construct_cycle_time_ranges_for_Operators(process_tree, time_interval_map)
-            if "Send Reminder" in time_interval_map:
-                print([str((range.end_datetime - range.start_datetime).total_seconds()) for range in time_interval_map["Send Reminder"]["cycle_times"]])
             self.update_extended_tree(time_interval_map, process_tree, instances)
             time_interval_map.clear()
-        t2 = time.perf_counter()
-        print(t2-t1)
+        # t2 = time.perf_counter()
+        # print(t2-t1)
         return response.ResponseSuccess(process_tree)
 
     def update_extended_tree(self, time_interval_map, process_tree, instances):

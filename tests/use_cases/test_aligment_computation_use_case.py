@@ -17,13 +17,10 @@ class TestAligmentComputationUseCase(unittest.TestCase):
         process_tree = process_tree_util.parse("->('a', *(->('c', 'd'), tau), 'b')")
         self.extended_process_tree = model.ExtendedProcessTree(process_tree)
         self.model, self.initial_marking, self.final_marking = converter.apply(self.extended_process_tree)
-        # gviz = pn_visualizer.apply(self.model, self.initial_marking, self.final_marking,parameters={"format": "svg"})
-        # pn_visualizer.view(gviz)
-        
+  
     def test_alignment_computation(self):
         use_case = alignment.AlignmentComputationUseCase()
         alignments = use_case.compute(self.model, self.initial_marking, self.final_marking, self.log)
-        # print(alignments)
         self.assertEqual(len(alignments), 1)
 
 

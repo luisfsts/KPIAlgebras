@@ -1,24 +1,21 @@
 from pm4py.algo.conformance.alignments import factory as alignments_factory
 from pm4py.objects.conversion.process_tree.converter import to_petri_net_transition_bordered as converter
-from pm4py.objects.petri import utils as petri_net_utils
+# from pm4py.objects.petri import utils as petri_net_utils
 from pm4py.objects.petri import align_utils 
 from pm4py.objects.petri import synchronous_product
 from pm4py.algo.conformance.alignments.versions import state_equation_a_star as alignment_algorithm
 from pm4py.algo.conformance.alignments import algorithm
 from pm4py.algo.filtering.log.attributes import attributes_filter
-# from pm4py.visualization.petrinet import visualizer as pn_visualizer
-
+from KPIAlgebras.util import util
 
 class AlignmentComputationUseCase(object):
     def compute(self, model, initial_marking, final_marking, event_log):
         alignments = []
 
         for trace in event_log.log:
-            instances = petri_net_utils.get_trace_activity_instances(trace)
+            instances = util.get_trace_activity_instances(trace)
             costs = list(map(lambda i: align_utils.STD_MODEL_LOG_MOVE_COST, instances))
-            partially_ordered_trace_net, trace_net_initial_marking, trace_net_final_marking, cost_map = petri_net_utils.construct_partially_ordered_trace_net_cost_aware(trace, costs)
-            # gviz = pn_visualizer.apply(partially_ordered_trace_net, trace_net_initial_marking, trace_net_final_marking)
-            # pn_visualizer.view(gviz)
+            partially_ordered_trace_net, trace_net_initial_marking, trace_net_final_marking, cost_map = util.construct_partially_ordered_trace_net_cost_aware(trace, instances,costs)    
             sync_prod, sync_initial_marking, sync_final_marking = synchronous_product.construct(partially_ordered_trace_net, 
                                                                                                       trace_net_initial_marking,
                                                                                                       trace_net_final_marking, 
