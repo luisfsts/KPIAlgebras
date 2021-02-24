@@ -24,4 +24,5 @@
 * Open a command prompt at the views directory and use the command 'ng serve'.
 * Open the URL http://localhost:4200 in your browser.
 
-
+#### Using the tool:
+You can begin using the tool by selecting an Event log(.xes or csv) and a Process model(.ptml) and click on upload
