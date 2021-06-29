@@ -1,9 +1,9 @@
-from pm4py.algo.conformance.alignments import factory as alignments_factory
+from pm4py.algo.conformance.alignments import algorithm as alignments_factory
 from pm4py.objects.conversion.process_tree.converter import to_petri_net_transition_bordered as converter
 # from pm4py.objects.petri import utils as petri_net_utils
 from pm4py.objects.petri import align_utils 
 from pm4py.objects.petri import synchronous_product
-from pm4py.algo.conformance.alignments.versions import state_equation_a_star as alignment_algorithm
+from pm4py.algo.conformance.alignments.variants import state_equation_a_star as alignment_algorithm
 from pm4py.algo.conformance.alignments import algorithm
 from pm4py.algo.filtering.log.attributes import attributes_filter
 from KPIAlgebras.util import util

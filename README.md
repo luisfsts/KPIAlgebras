@@ -4,15 +4,12 @@
 >A framework that supports the prediction of future performance based on anticipated activity-level performance changes and control-flow changes. We have applied our approach to several real event logs, confirming our approach’s practical applicability
 
 #### Dependencies: 
-* Python environment:
-  * pm4py
-  * flask
-  * flask_cors
-
+* Python
+  * install the packages listed in requirements.txt
 * Node:
   * Download and install node.js
 * Angular:
-  * Run the commands:
+  * Navigate to the /views/ folder and run the commands:
     * npm install -g @angular/cli@latest
 	* npm install --save-dev @angular-devkit/build-angular
 
