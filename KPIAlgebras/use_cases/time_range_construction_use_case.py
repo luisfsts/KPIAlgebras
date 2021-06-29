@@ -423,7 +423,6 @@ class TimeRangesConstructionUseCase(object):
             if bool(state.change):
                 if transition.label == state.change["node"]:
                     shifting_amount = self.get_shifting_amount(state.change["kpi"], state.change["delta"], timed_marking, transition, time_range)
-                    time_range.set_start_datetime(start - shifting_amount)
                     time_range.set_end_datetime(end - shifting_amount)
                     
                     if last_enabling_token["shifting_amount"]:
